@@ -21,6 +21,10 @@ build/Release
 # TypeScript cache
 *.tsbuildinfo
 
+# Local SQLite database from earlier local development
+prisma/dev.db
+prisma/dev.db-journal
+
 # Framework build output and caches
 .cache
 .parcel-cache
