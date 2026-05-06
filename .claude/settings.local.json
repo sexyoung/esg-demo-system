@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(*)",
+      "mcp__plugin_context7_context7__resolve-library-id",
+      "mcp__plugin_context7_context7__query-docs",
+      "WebSearch",
+      "WebFetch(*)",
+      "Skill(plan-eng-review)",
+      "Skill(design-consultation)",
+      "Skill(gstack)",
+      "Skill(plan-design-review)",
+      "Skill(investigate)",
+      "Skill(office-hours)"
+    ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "bash /workspaces/esg-demo-system/.claude/statusline-command.sh"
+  }
+}
