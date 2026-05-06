@@ -6,3 +6,4 @@ RUN apt-get update \
 
 RUN npm install -g @openai/codex
 RUN curl -fsSL https://claude.ai/install.sh | bash
+RUN curl -fsSL https://bun.sh/install | bash
