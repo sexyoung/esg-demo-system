@@ -13,29 +13,46 @@
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
+    "demo": "concurrently -n api,web -c blue,green \"npm:dev:api\" \"npm:dev\""
   },
   "dependencies": {
     "@hono/node-server": "^1.13.8",
     "@prisma/client": "^6.2.1",
     "@tailwindcss/vite": "^4.0.0",
+    "@tanstack/react-query": "^5.100.9",
+    "d3": "^7.9.0",
+    "echarts": "^6.0.0",
+    "highcharts": "^12.6.0",
+    "highcharts-react-official": "^3.2.3",
     "hono": "^4.6.16",
     "lucide-react": "^0.468.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "redis": "^4.7.0"
+    "react-router-dom": "^7.15.0",
+    "redis": "^4.7.0",
+    "uplot": "^1.6.32",
+    "zod": "^4.4.3",
+    "zustand": "^5.0.13"
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",
+    "@types/d3": "^7.4.3",
     "@types/node": "^22.10.5",
     "@types/react": "^19.0.2",
     "@types/react-dom": "^19.0.2",
     "@vitejs/plugin-react": "^4.3.4",
+    "@vitest/ui": "^4.1.5",
+    "concurrently": "^9.2.1",
     "eslint": "^9.17.0",
     "prisma": "^6.2.1",
     "tailwindcss": "^4.0.0",
     "tsx": "^4.19.2",
     "typescript": "~5.7.2",
-    "vite": "^6.0.7"
+    "vite": "^6.0.7",
+    "vitest": "^4.1.5"
   }
 }

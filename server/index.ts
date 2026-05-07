@@ -3,6 +3,11 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { prisma } from './lib/prisma.js';
 import { closeRedis, getRedis } from './lib/redis.js';
+import { tenantsRouter } from './routes/tenants.js';
+import { metricsRouter } from './routes/metrics.js';
+import { sitesRouter } from './routes/sites.js';
+import { liveRouter } from './routes/live.js';
+import { simulateRouter } from './routes/simulate.js';
 
 const app = new Hono();
 
@@ -10,7 +15,6 @@ app.use('/api/*', cors());
 
 app.get('/api/health', async (c) => {
   const [database, redis] = await Promise.all([checkDatabase(), checkRedis()]);
-
   return c.json({
     status: 'ok',
     service: 'esg-demo-api',
@@ -20,63 +24,11 @@ app.get('/api/health', async (c) => {
   });
 });
 
-app.get('/api/projects', async (c) => {
-  const projects = await prisma.project.findMany({
-    orderBy: {
-      createdAt: 'desc',
-    },
-  });
-
-  return c.json(projects);
-});
-
-app.post('/api/projects', async (c) => {
-  const body = await c.req.json<{
-    name?: string;
-    owner?: string;
-    status?: 'PLANNING' | 'ACTIVE' | 'ARCHIVED';
-    carbonTons?: number;
-  }>();
-
-  if (!body.name || !body.owner) {
-    return c.json({ message: 'name and owner are required' }, 400);
-  }
-
-  const project = await prisma.project.create({
-    data: {
-      name: body.name,
-      owner: body.owner,
-      status: body.status ?? 'PLANNING',
-      carbonTons: body.carbonTons ?? 0,
-    },
-  });
-
-  return c.json(project, 201);
-});
-
-app.get('/api/cache/:key', async (c) => {
-  const key = c.req.param('key');
-  const redis = await getRedis();
-
-  if (!redis) {
-    return c.json({
-      key,
-      value: 'Redis 尚未連線，這是 fallback 資料。',
-      source: 'fallback',
-    });
-  }
-
-  const cached = await redis.get(key);
-
-  if (cached) {
-    return c.json({ key, value: cached, source: 'redis' });
-  }
-
-  const value = `Cached at ${new Date().toISOString()}`;
-  await redis.set(key, value, { EX: 60 });
-
-  return c.json({ key, value, source: 'redis' });
-});
+app.route('/api/tenants', tenantsRouter);
+app.route('/api/tenants', metricsRouter);
+app.route('/api/tenants', liveRouter);
+app.route('/api/sites', sitesRouter);
+app.route('/api/simulate', simulateRouter);
 
 app.notFound((c) => c.json({ message: 'Not found' }, 404));
 
@@ -103,11 +55,7 @@ async function checkDatabase() {
 
 async function checkRedis() {
   const redis = await getRedis();
-
-  if (!redis) {
-    return 'unavailable';
-  }
-
+  if (!redis) return 'unavailable';
   try {
     await redis.ping();
     return 'connected';

@@ -7,18 +7,99 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum ProjectStatus {
-  PLANNING
-  ACTIVE
-  ARCHIVED
+enum AssetType {
+  SITE
+  BUILDING
+  FLOOR
+  LINE
+  METER
+  PV
+  ESS
+  EV_CHARGER
 }
 
-model Project {
-  id         String        @id @default(cuid())
-  name       String
-  owner      String
-  status     ProjectStatus @default(PLANNING)
-  carbonTons Float         @default(0)
-  createdAt  DateTime      @default(now())
-  updatedAt  DateTime      @updatedAt
+enum AlertSeverity {
+  CRITICAL
+  WARN
+  INFO
+}
+
+enum MetricType {
+  POWER
+  ENERGY
+  CO2
+  TEMP
+  OEE
+}
+
+model Tenant {
+  id       String  @id @default(cuid())
+  slug     String  @unique
+  name     String
+  industry String
+  config   Json
+  sites    Site[]
+  assets   Asset[]
+  alerts   Alert[]
+
+  @@index([slug])
+}
+
+model Site {
+  id        String  @id @default(cuid())
+  tenantId  String
+  code      String
+  name      String
+  latitude  Float
+  longitude Float
+  metadata  Json?
+  tenant    Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  assets    Asset[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+}
+
+model Asset {
+  id       String          @id @default(cuid())
+  tenantId String
+  siteId   String?
+  parentId String?
+  type     AssetType
+  name     String
+  metadata Json
+  tenant   Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  site     Site?           @relation(fields: [siteId], references: [id], onDelete: SetNull)
+  parent   Asset?          @relation("AssetTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children Asset[]         @relation("AssetTree")
+  readings MetricReading[]
+
+  @@index([tenantId])
+  @@index([siteId])
+  @@index([parentId])
+}
+
+model MetricReading {
+  id        String     @id @default(cuid())
+  assetId   String
+  timestamp DateTime
+  metric    MetricType
+  value     Float
+  asset     Asset      @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@index([assetId, metric, timestamp])
+  @@index([timestamp])
+}
+
+model Alert {
+  id          String        @id @default(cuid())
+  tenantId    String
+  severity    AlertSeverity
+  title       String
+  description String
+  triggeredAt DateTime
+  resolved    Boolean       @default(false)
+  tenant      Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, triggeredAt])
 }
