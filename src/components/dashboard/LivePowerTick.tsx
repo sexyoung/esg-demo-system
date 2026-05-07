@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import uPlot, { type AlignedData, type Options } from 'uplot';
 import 'uplot/dist/uPlot.min.css';
+import { useFps } from '../../lib/useFps';
 
 const MAX_POINTS = 600;
 const STATS_INTERVAL_MS = 1000;
@@ -11,7 +12,6 @@ interface Props {
 
 interface Stats {
   evtPerSec: number;
-  fps: number;
   buffer: number;
   status: 'connecting' | 'live' | 'error';
 }
@@ -23,9 +23,9 @@ export function LivePowerTick({ slug }: Props) {
   const bufferRef = useRef<Array<[number, number]>>([]);
   const rafRef = useRef<number | null>(null);
   const evtCountRef = useRef(0);
-  const frameCountRef = useRef(0);
   const lastStatTsRef = useRef(performance.now());
-  const [stats, setStats] = useState<Stats>({ evtPerSec: 0, fps: 0, buffer: 0, status: 'connecting' });
+  const fps = useFps(500);
+  const [stats, setStats] = useState<Stats>({ evtPerSec: 0, buffer: 0, status: 'connecting' });
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -107,7 +107,6 @@ export function LivePowerTick({ slug }: Props) {
         plotRef.current.setData([ts, kw] as unknown as AlignedData);
         bufferRef.current = [];
       }
-      frameCountRef.current += 1;
       rafRef.current = null;
     }
 
@@ -133,13 +132,10 @@ export function LivePowerTick({ slug }: Props) {
       const elapsed = (now - lastStatTsRef.current) / 1000;
       lastStatTsRef.current = now;
       const evt = evtCountRef.current;
-      const fps = frameCountRef.current;
       evtCountRef.current = 0;
-      frameCountRef.current = 0;
       setStats((prev) => ({
         ...prev,
         evtPerSec: Math.round(evt / elapsed),
-        fps: Math.round(fps / elapsed),
         buffer: bufferRef.current.length,
       }));
     }, STATS_INTERVAL_MS);
@@ -165,7 +161,7 @@ export function LivePowerTick({ slug }: Props) {
         </div>
         <div className="text-xs text-fg-muted tabular-nums flex items-center gap-3">
           <span><span className="text-accent-soft">{stats.evtPerSec}</span> evt/s</span>
-          <span><span className="text-success">{stats.fps}</span> fps</span>
+          <span><span className={fps >= 55 ? 'text-success' : fps >= 30 ? 'text-warn' : 'text-danger'}>{fps}</span> fps</span>
           <span>buffer: <span className="text-warn">{stats.buffer}</span></span>
         </div>
       </div>

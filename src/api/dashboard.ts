@@ -34,6 +34,19 @@ export interface AssetRow {
   site: { code: string; name: string } | null;
 }
 
+export interface FlowsResponse {
+  range: string;
+  unit: 'kWh';
+  flows: Array<{ source: string; target: string; value: number }>;
+  totals: {
+    pv: number;
+    essCharge: number;
+    essDischarge: number;
+    load: number;
+    grid: number;
+  };
+}
+
 async function jsonFetch<T>(path: string): Promise<T> {
   const res = await fetch(path);
   if (!res.ok) {
@@ -48,10 +61,12 @@ export const dashboardApi = {
   metrics: (slug: string, range = '24h', metric = 'POWER') =>
     jsonFetch<MetricsResponse>(`/api/tenants/${slug}/metrics?range=${range}&metric=${metric}`),
   assets: (slug: string) => jsonFetch<AssetRow[]>(`/api/tenants/${slug}/assets`),
+  flows: (slug: string, range = '24h') => jsonFetch<FlowsResponse>(`/api/tenants/${slug}/flows?range=${range}`),
 };
 
 export const dashboardKeys = {
   kpi: (slug: string, range: string) => ['kpi', slug, range] as const,
   metrics: (slug: string, range: string, metric: string) => ['metrics', slug, range, metric] as const,
   assets: (slug: string) => ['assets', slug] as const,
+  flows: (slug: string, range: string) => ['flows', slug, range] as const,
 };

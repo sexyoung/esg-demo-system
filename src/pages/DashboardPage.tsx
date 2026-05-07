@@ -1,10 +1,15 @@
 import { useQuery } from '@tanstack/react-query';
 import { useParams } from 'react-router-dom';
 import { api, queryKeys } from '../api/client';
+import { AlertsPanel } from '../components/dashboard/AlertsPanel';
 import { AssetTree } from '../components/dashboard/AssetTree';
+import { BetaEuiRanking } from '../components/dashboard/BetaEuiRanking';
 import { EnergyMixChart } from '../components/dashboard/EnergyMixChart';
+import { GammaOeeDual } from '../components/dashboard/GammaOeeDual';
 import { KpiStrip } from '../components/dashboard/KpiStrip';
 import { LivePowerTick } from '../components/dashboard/LivePowerTick';
+import { RecommendationEngine } from '../components/dashboard/RecommendationEngine';
+import { SankeyChart } from '../components/dashboard/SankeyChart';
 
 export function DashboardPage() {
   const { slug = 'acme' } = useParams<{ slug: string }>();
@@ -43,12 +48,26 @@ export function DashboardPage() {
 
       <KpiStrip slug={slug} />
 
-      <div className="grid gap-5 lg:grid-cols-[1.5fr_1fr]">
-        <EnergyMixChart slug={slug} />
-        <AssetTree slug={slug} />
+      <div className="grid gap-5 lg:grid-cols-[1.6fr_1fr]">
+        <TenantHeroWidget slug={slug} />
+        <RecommendationEngine slug={slug} />
       </div>
+
+      <div className="grid gap-5 lg:grid-cols-[1.6fr_1fr]">
+        <EnergyMixChart slug={slug} />
+        <AlertsPanel slug={slug} />
+      </div>
+
+      <AssetTree slug={slug} />
     </div>
   );
+}
+
+function TenantHeroWidget({ slug }: { slug: string }) {
+  if (slug === 'acme') return <SankeyChart slug={slug} />;
+  if (slug === 'beta') return <BetaEuiRanking slug={slug} />;
+  if (slug === 'gamma') return <GammaOeeDual slug={slug} />;
+  return <SankeyChart slug={slug} />;
 }
 
 function Stat({ label, value }: { label: string; value: number }) {

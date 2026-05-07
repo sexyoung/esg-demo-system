@@ -151,6 +151,19 @@ function fabLoadKw(date: Date, basePeak: number): number {
   return basePeak * (0.92 + drift) + noise(basePeak * 0.025);
 }
 
+function essDispatchKw(date: Date, load: number, pv: number): number {
+  const hour = date.getHours() + date.getMinutes() / 60;
+  const dow = date.getDay();
+  const isWeekday = dow >= 1 && dow <= 5;
+  const peak = isWeekday && hour >= 16 && hour < 22;
+  const offPeak = hour < 9 || dow === 0;
+  const net = load - pv;
+  if (peak && net > 0) return -Math.min(800, net * 0.6);
+  if (offPeak) return Math.min(500, 800 - Math.max(0, pv - load));
+  if (pv > load) return Math.min(400, pv - load);
+  return 0;
+}
+
 function evChargerKw(date: Date, ports: number): number {
   const hour = date.getHours() + date.getMinutes() / 60;
   const dow = date.getDay();
@@ -231,6 +244,37 @@ async function main() {
         data: { tenantId: tenant.id, siteId: mainSite.id, type: 'EV_CHARGER' as AssetType, name: 'EV 充電場 (8 ports)', metadata: { ports: 8, kwPerPort: 50 } },
       });
 
+      const pvStringNames = ['PV String A · 200 kW', 'PV String B · 200 kW', 'PV String C · 200 kW', 'PV String D · 200 kW'];
+      for (const name of pvStringNames) {
+        await prisma.asset.create({
+          data: { tenantId: tenant.id, siteId: mainSite.id, parentId: pv.id, type: 'PV' as AssetType, name, metadata: { capacityKw: 200 } },
+        });
+      }
+      const essRackNames = ['ESS Rack 1 · 1 MWh', 'ESS Rack 2 · 1 MWh'];
+      for (const name of essRackNames) {
+        await prisma.asset.create({
+          data: { tenantId: tenant.id, siteId: mainSite.id, parentId: ess.id, type: 'ESS' as AssetType, name, metadata: { capacityKwh: 1000 } },
+        });
+      }
+      const floorNames = ['F1 製程主廠房', 'F2 辦公樓層', '屋頂冷卻系統'];
+      for (const name of floorNames) {
+        await prisma.asset.create({
+          data: { tenantId: tenant.id, siteId: mainSite.id, parentId: load.id, type: 'FLOOR' as AssetType, name, metadata: {} },
+        });
+      }
+      for (let i = 1; i <= 8; i++) {
+        await prisma.asset.create({
+          data: {
+            tenantId: tenant.id,
+            siteId: mainSite.id,
+            parentId: ev.id,
+            type: 'EV_CHARGER' as AssetType,
+            name: `DC-${i.toString().padStart(2, '0')} · 50 kW`,
+            metadata: { kwPerPort: 50 },
+          },
+        });
+      }
+
       for (let q = 0; q < DAYS_OF_HISTORY * QUARTERS_PER_DAY; q++) {
         const ts = new Date(startTs + q * QUARTER_MS);
         const tsHour = ts.getHours() + ts.getMinutes() / 60;
@@ -238,8 +282,7 @@ async function main() {
         const loadKw = industrialLoadKw(ts, 2200);
         const evKw = evChargerKw(ts, 8);
         const totalLoad = loadKw + evKw;
-        const net = totalLoad - pvKw;
-        const essKw = net > 1500 ? -Math.min(800, net - 1500) : net < 0 ? Math.min(600, -net) : 0;
+        const essKw = essDispatchKw(ts, totalLoad, pvKw);
         const gridKw = totalLoad - pvKw + essKw;
         readings.push(
           { assetId: pv.id, timestamp: ts, metric: 'POWER' as MetricType, value: round2(pvKw) },
@@ -262,15 +305,70 @@ async function main() {
         }
       }
     } else if (t.slug === 'beta') {
+      const betaProfiles: Record<string, { peakKw: number; floorM2: number; efficiency: number }> = {
+        'BET-01': { peakKw: 1800, floorM2: 38000, efficiency: 0.95 },
+        'BET-02': { peakKw: 1200, floorM2: 28000, efficiency: 0.92 },
+        'BET-03': { peakKw: 950, floorM2: 18000, efficiency: 0.85 },
+        'BET-04': { peakKw: 1450, floorM2: 30000, efficiency: 1.05 },
+        'BET-05': { peakKw: 1100, floorM2: 26000, efficiency: 0.9 },
+        'BET-06': { peakKw: 1300, floorM2: 24000, efficiency: 1.0 },
+        'BET-07': { peakKw: 850, floorM2: 17000, efficiency: 1.1 },
+        'BET-08': { peakKw: 480, floorM2: 14500, efficiency: 1.15 },
+        'BET-09': { peakKw: 420, floorM2: 12000, efficiency: 1.2 },
+        'BET-10': { peakKw: 380, floorM2: 9500, efficiency: 1.25 },
+        'BET-11': { peakKw: 320, floorM2: 8200, efficiency: 1.3 },
+        'BET-12': { peakKw: 240, floorM2: 6500, efficiency: 1.35 },
+        'BET-13': { peakKw: 280, floorM2: 8000, efficiency: 1.0 },
+        'BET-14': { peakKw: 720, floorM2: 14000, efficiency: 1.4 },
+        'BET-15': { peakKw: 580, floorM2: 13500, efficiency: 1.05 },
+        'BET-16': { peakKw: 540, floorM2: 12500, efficiency: 1.1 },
+        'BET-17': { peakKw: 390, floorM2: 9000, efficiency: 1.0 },
+        'BET-18': { peakKw: 220, floorM2: 5800, efficiency: 1.15 },
+        'BET-19': { peakKw: 260, floorM2: 6800, efficiency: 1.05 },
+        'BET-20': { peakKw: 460, floorM2: 11500, efficiency: 1.0 },
+        'BET-21': { peakKw: 620, floorM2: 13800, efficiency: 0.95 },
+        'BET-22': { peakKw: 380, floorM2: 9200, efficiency: 1.05 },
+      };
       for (const site of sites) {
-        const idx = parseInt(site.code.split('-')[1] ?? '0', 10);
-        const peak = 80 + (idx % 7) * 35;
+        const profile = betaProfiles[site.code] ?? { peakKw: 400, floorM2: 10000, efficiency: 1.0 };
         const meter = await prisma.asset.create({
-          data: { tenantId: tenant.id, siteId: site.id, type: 'BUILDING' as AssetType, name: `${site.code} ${site.name}`, metadata: { peakKw: peak } },
+          data: {
+            tenantId: tenant.id,
+            siteId: site.id,
+            type: 'BUILDING' as AssetType,
+            name: `${site.code} ${site.name}`,
+            metadata: { peakKw: profile.peakKw, floorAreaM2: profile.floorM2, efficiencyMultiplier: profile.efficiency },
+          },
         });
+        if (site.code === 'BET-01') {
+          const hvac = await prisma.asset.create({
+            data: { tenantId: tenant.id, siteId: site.id, parentId: meter.id, type: 'LINE' as AssetType, name: 'HVAC 系統', metadata: { share: 0.45 } },
+          });
+          for (const name of ['冷凍主機 #1', '冷凍主機 #2', '末端 AHU 群', '冷卻水塔']) {
+            await prisma.asset.create({
+              data: { tenantId: tenant.id, siteId: site.id, parentId: hvac.id, type: 'METER' as AssetType, name, metadata: {} },
+            });
+          }
+          const lighting = await prisma.asset.create({
+            data: { tenantId: tenant.id, siteId: site.id, parentId: meter.id, type: 'LINE' as AssetType, name: '照明系統', metadata: { share: 0.18 } },
+          });
+          for (const name of ['辦公層照明', '公共區照明', '景觀外牆']) {
+            await prisma.asset.create({
+              data: { tenantId: tenant.id, siteId: site.id, parentId: lighting.id, type: 'METER' as AssetType, name, metadata: {} },
+            });
+          }
+          const it = await prisma.asset.create({
+            data: { tenantId: tenant.id, siteId: site.id, parentId: meter.id, type: 'LINE' as AssetType, name: 'IT / 辦公', metadata: { share: 0.27 } },
+          });
+          for (const name of ['機房 UPS', '辦公層插座', '電梯與其他']) {
+            await prisma.asset.create({
+              data: { tenantId: tenant.id, siteId: site.id, parentId: it.id, type: 'METER' as AssetType, name, metadata: {} },
+            });
+          }
+        }
         for (let q = 0; q < DAYS_OF_HISTORY * QUARTERS_PER_DAY; q++) {
           const ts = new Date(startTs + q * QUARTER_MS);
-          const v = officeLoadKw(ts, peak);
+          const v = officeLoadKw(ts, profile.peakKw) * profile.efficiency;
           readings.push({ assetId: meter.id, timestamp: ts, metric: 'POWER' as MetricType, value: round2(v) });
         }
       }
@@ -282,6 +380,40 @@ async function main() {
         const fab = await prisma.asset.create({
           data: { tenantId: tenant.id, siteId: site.id, type: 'LINE' as AssetType, name: `${site.code} ${site.name}`, metadata: { peakKw: peak, oeeBase } },
         });
+        if (site.code === 'GAM-01') {
+          const litho = await prisma.asset.create({
+            data: { tenantId: tenant.id, siteId: site.id, parentId: fab.id, type: 'LINE' as AssetType, name: 'Litho 黃光區', metadata: { share: 0.22 } },
+          });
+          for (const name of ['EUV NXE-3600', 'DUV NXT-2050i']) {
+            await prisma.asset.create({
+              data: { tenantId: tenant.id, siteId: site.id, parentId: litho.id, type: 'METER' as AssetType, name, metadata: {} },
+            });
+          }
+          const etch = await prisma.asset.create({
+            data: { tenantId: tenant.id, siteId: site.id, parentId: fab.id, type: 'LINE' as AssetType, name: 'Etch 蝕刻區', metadata: { share: 0.28 } },
+          });
+          for (const name of ['Etch Bay-1', 'Etch Bay-2', 'Etch Bay-3']) {
+            await prisma.asset.create({
+              data: { tenantId: tenant.id, siteId: site.id, parentId: etch.id, type: 'METER' as AssetType, name, metadata: {} },
+            });
+          }
+          const cvd = await prisma.asset.create({
+            data: { tenantId: tenant.id, siteId: site.id, parentId: fab.id, type: 'LINE' as AssetType, name: 'CVD 沈積區', metadata: { share: 0.31 } },
+          });
+          for (const name of ['PECVD #1', 'PECVD #2', 'ALD #1']) {
+            await prisma.asset.create({
+              data: { tenantId: tenant.id, siteId: site.id, parentId: cvd.id, type: 'METER' as AssetType, name, metadata: {} },
+            });
+          }
+          const diff = await prisma.asset.create({
+            data: { tenantId: tenant.id, siteId: site.id, parentId: fab.id, type: 'LINE' as AssetType, name: 'Diff 擴散爐', metadata: { share: 0.19 } },
+          });
+          for (const name of ['Furnace A', 'Furnace B']) {
+            await prisma.asset.create({
+              data: { tenantId: tenant.id, siteId: site.id, parentId: diff.id, type: 'METER' as AssetType, name, metadata: {} },
+            });
+          }
+        }
         for (let q = 0; q < DAYS_OF_HISTORY * QUARTERS_PER_DAY; q++) {
           const ts = new Date(startTs + q * QUARTER_MS);
           readings.push(

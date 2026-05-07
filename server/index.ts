@@ -6,6 +6,7 @@ import { closeRedis, getRedis } from './lib/redis.js';
 import { tenantsRouter } from './routes/tenants.js';
 import { metricsRouter } from './routes/metrics.js';
 import { kpiRouter } from './routes/kpi.js';
+import { flowsRouter } from './routes/flows.js';
 import { sitesRouter } from './routes/sites.js';
 import { liveRouter } from './routes/live.js';
 import { simulateRouter } from './routes/simulate.js';
@@ -28,6 +29,7 @@ app.get('/api/health', async (c) => {
 app.route('/api/tenants', tenantsRouter);
 app.route('/api/tenants', metricsRouter);
 app.route('/api/tenants', kpiRouter);
+app.route('/api/tenants', flowsRouter);
 app.route('/api/tenants', liveRouter);
 app.route('/api/sites', sitesRouter);
 app.route('/api/simulate', simulateRouter);

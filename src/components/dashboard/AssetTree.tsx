@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import * as d3 from 'd3';
 import { useMemo } from 'react';
+import { api, queryKeys } from '../../api/client';
 import { dashboardApi, dashboardKeys, type AssetRow } from '../../api/dashboard';
 
 interface Props {
@@ -10,50 +11,63 @@ interface Props {
 interface TreeNode {
   id: string;
   name: string;
-  kind: 'tenant' | 'site' | 'asset';
+  kind: 'site' | 'asset';
   type?: string;
   children?: TreeNode[];
 }
 
 export function AssetTree({ slug }: Props) {
-  const { data, isLoading } = useQuery({
+  const tenantQuery = useQuery({
+    queryKey: queryKeys.tenant(slug),
+    queryFn: () => api.tenant(slug),
+  });
+  const assetsQuery = useQuery({
     queryKey: dashboardKeys.assets(slug),
     queryFn: () => dashboardApi.assets(slug),
   });
 
-  const layout = useMemo(() => (data ? buildLayout(slug, data) : null), [slug, data]);
+  const primarySiteCode = (tenantQuery.data?.config as { primarySiteCode?: string } | undefined)?.primarySiteCode ?? null;
+
+  const layout = useMemo(
+    () => (assetsQuery.data && primarySiteCode ? buildLayout(primarySiteCode, assetsQuery.data) : null),
+    [primarySiteCode, assetsQuery.data],
+  );
 
   return (
     <section className="rounded-lg border border-border bg-bg-elevated overflow-hidden">
       <div className="flex items-center justify-between px-4 py-2 border-b border-border-soft">
         <div className="text-xs uppercase tracking-wider text-fg-muted">
-          Asset Tree <span className="text-fg-subtle normal-case tracking-normal">· D3.js</span>
+          {primarySiteCode ?? '主場景'} 子系統階層 <span className="text-fg-subtle normal-case tracking-normal">· D3.js tree</span>
         </div>
-        {data && <span className="text-xs text-fg-subtle">{data.length} assets</span>}
+        {layout && (
+          <span className="text-xs text-fg-subtle tabular-nums">
+            {layout.nodeCount} nodes · {layout.depth} levels
+          </span>
+        )}
       </div>
-      <div className="overflow-x-auto overflow-y-hidden">
-        {isLoading ? (
+      <div className="overflow-auto max-h-[480px]">
+        {assetsQuery.isLoading || tenantQuery.isLoading ? (
           <div className="p-6 text-fg-muted text-sm">載入中…</div>
         ) : layout ? (
-          <svg width={layout.width} height={layout.height} className="block min-w-full">
+          <svg width={layout.width} height={layout.height} className="block">
             <g transform={`translate(${layout.padX},${layout.padY})`}>
-              {layout.links.map((l, i) => (
-                <path key={i} d={l} fill="none" stroke="#243049" strokeWidth={1.2} />
+              {layout.links.map((d, i) => (
+                <path key={i} d={d} fill="none" stroke="#243049" strokeWidth={1.2} />
               ))}
               {layout.nodes.map((n) => (
-                <g key={n.data.id} transform={`translate(${n.x},${n.y})`}>
+                <g key={n.id} transform={`translate(${n.x},${n.y})`}>
                   <circle
-                    r={n.data.kind === 'tenant' ? 7 : n.data.kind === 'site' ? 5 : 4}
+                    r={n.depth === 0 ? 7 : n.depth === 1 ? 5 : 3.5}
                     fill={fillFor(n.data)}
                     stroke="#0b1220"
                     strokeWidth={2}
                   />
                   <text
-                    x={9}
+                    x={n.depth === 0 ? 11 : 9}
                     y={4}
-                    fontSize={n.data.kind === 'tenant' ? 12 : 11}
-                    fontWeight={n.data.kind === 'tenant' ? 600 : 400}
-                    fill={n.data.kind === 'tenant' ? '#e6edf7' : '#93a3bf'}
+                    fontSize={n.depth === 0 ? 12 : 11}
+                    fontWeight={n.depth === 0 ? 600 : n.depth === 1 ? 500 : 400}
+                    fill={n.depth === 0 ? '#e6edf7' : n.depth === 1 ? '#c0cce0' : '#93a3bf'}
                   >
                     {n.data.name}
                   </text>
@@ -70,8 +84,7 @@ export function AssetTree({ slug }: Props) {
 }
 
 function fillFor(d: TreeNode): string {
-  if (d.kind === 'tenant') return '#0083b6';
-  if (d.kind === 'site') return '#00a3df';
+  if (d.kind === 'site') return '#0083b6';
   switch (d.type) {
     case 'PV':
       return '#fbbf24';
@@ -82,88 +95,80 @@ function fillFor(d: TreeNode): string {
     case 'METER':
       return '#f87171';
     case 'BUILDING':
+      return '#00a3df';
     case 'LINE':
-      return '#93a3bf';
+      return '#60a5fa';
+    case 'FLOOR':
+      return '#94a3b8';
     default:
       return '#5e6e8a';
   }
 }
 
-function buildLayout(slug: string, assets: AssetRow[]) {
-  const sitesMap = new Map<string, TreeNode>();
-  for (const a of assets) {
-    if (!a.site) continue;
-    if (!sitesMap.has(a.site.code)) {
-      sitesMap.set(a.site.code, {
-        id: `site-${a.site.code}`,
-        name: a.site.code,
-        kind: 'site',
-        children: [],
-      });
-    }
+function buildLayout(primarySiteCode: string, assets: AssetRow[]) {
+  const primarySiteAssets = assets.filter((a) => a.site?.code === primarySiteCode);
+  if (primarySiteAssets.length === 0) {
+    return null;
   }
-  for (const a of assets) {
-    if (!a.site) continue;
-    const site = sitesMap.get(a.site.code)!;
-    site.children!.push({
+
+  const nodeMap = new Map<string, TreeNode>();
+  for (const a of primarySiteAssets) {
+    nodeMap.set(a.id, {
       id: a.id,
-      name: a.type === 'BUILDING' && site.children!.length === 0 && sitesMap.size > 5 ? a.site.name : labelFor(a),
+      name: a.name,
       kind: 'asset',
       type: a.type,
+      children: [],
     });
   }
 
   const root: TreeNode = {
     id: 'root',
-    name: tenantLabel(slug),
-    kind: 'tenant',
-    children: [...sitesMap.values()].sort((a, b) => a.name.localeCompare(b.name)),
+    name: primarySiteCode,
+    kind: 'site',
+    children: [],
   };
+
+  for (const a of primarySiteAssets) {
+    const node = nodeMap.get(a.id)!;
+    if (a.parentId && nodeMap.has(a.parentId)) {
+      nodeMap.get(a.parentId)!.children!.push(node);
+    } else {
+      root.children!.push(node);
+    }
+  }
 
   const hierarchy = d3.hierarchy(root, (d) => d.children);
-  const treeLayout = d3.tree<TreeNode>().nodeSize([22, 220]);
+  const treeLayout = d3.tree<TreeNode>().nodeSize([22, 200]);
   const tree = treeLayout(hierarchy);
 
-  const nodes = tree.descendants();
+  const nodes = tree.descendants().map((n) => ({
+    id: n.data.id,
+    data: n.data,
+    depth: n.depth,
+    x: n.y,
+    y: n.x,
+  }));
   const links = tree.links().map((l) => {
-    return d3.linkHorizontal<unknown, d3.HierarchyPointNode<TreeNode>>().x((n) => n.y).y((n) => n.x)({
-      source: l.source,
-      target: l.target,
-    } as never) ?? '';
+    const sx = l.source.y;
+    const sy = l.source.x;
+    const tx = l.target.y;
+    const ty = l.target.x;
+    const mx = (sx + tx) / 2;
+    return `M${sx},${sy} C${mx},${sy} ${mx},${ty} ${tx},${ty}`;
   });
 
-  let minX = Infinity, maxX = -Infinity, maxY = 0;
+  let minY = Infinity, maxY = -Infinity, maxX = 0;
   for (const n of nodes) {
-    if (n.x < minX) minX = n.x;
-    if (n.x > maxX) maxX = n.x;
+    if (n.y < minY) minY = n.y;
     if (n.y > maxY) maxY = n.y;
+    if (n.x > maxX) maxX = n.x;
   }
   const padX = 20;
-  const padY = -minX + 16;
-  const width = maxY + 240;
-  const height = (maxX - minX) + 32;
+  const padY = -minY + 20;
+  const width = maxX + 240;
+  const height = (maxY - minY) + 40;
+  const depth = Math.max(...nodes.map((n) => n.depth));
 
-  return {
-    nodes: nodes.map((n) => ({ ...n, x: n.y, y: n.x })),
-    links: tree.links().map((l) => {
-      const sx = l.source.y;
-      const sy = l.source.x;
-      const tx = l.target.y;
-      const ty = l.target.x;
-      const mx = (sx + tx) / 2;
-      return `M${sx},${sy} C${mx},${sy} ${mx},${ty} ${tx},${ty}`;
-    }),
-    width,
-    height,
-    padX,
-    padY,
-  };
-}
-
-function labelFor(a: AssetRow): string {
-  return a.name.length > 24 ? `${a.name.slice(0, 22)}…` : a.name;
-}
-
-function tenantLabel(slug: string): string {
-  return slug === 'acme' ? 'Acme 微電網園區' : slug === 'beta' ? 'Beta 商辦集團' : slug === 'gamma' ? 'Gamma 半導體廠' : slug;
+  return { nodes, links, width, height, padX, padY, nodeCount: nodes.length, depth };
 }
