@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { DashboardPage } from './pages/DashboardPage';
+import { MapPage } from './pages/MapPage';
 import { PlaceholderPage } from './pages/PlaceholderPage';
 import { SimulatorPage } from './pages/SimulatorPage';
 
@@ -9,7 +10,7 @@ function App() {
     <Routes>
       <Route element={<Layout />}>
         <Route index element={<Navigate to="/tenants/acme" replace />} />
-        <Route path="/map" element={<PlaceholderPage title="全域監控地圖" day="Day 5" />} />
+        <Route path="/map" element={<MapPage />} />
         <Route path="/tenants/:slug">
           <Route index element={<DashboardPage />} />
           <Route path="simulator" element={<SimulatorPage />} />

@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { AlertCircle, AlertTriangle, Info } from 'lucide-react';
 import { api, queryKeys, type AlertRow } from '../../api/client';
+import { WidgetEmpty, WidgetError, WidgetSkeleton } from './WidgetState';
 
 interface Props {
   slug: string;
@@ -13,7 +14,7 @@ const SEVERITY_STYLES: Record<AlertRow['severity'], { Icon: typeof AlertCircle; 
 };
 
 export function AlertsPanel({ slug }: Props) {
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: queryKeys.alerts(slug),
     queryFn: () => api.alerts(slug),
     refetchInterval: 60_000,
@@ -27,32 +28,51 @@ export function AlertsPanel({ slug }: Props) {
         </div>
         {isLoading && <span className="text-xs text-fg-subtle">…</span>}
       </div>
-      <div className="divide-y divide-border-soft">
-        {data?.length === 0 && (
-          <div className="p-6 text-center text-fg-muted text-sm">目前沒有告警</div>
-        )}
-        {data?.map((alert) => {
-          const style = SEVERITY_STYLES[alert.severity];
-          const { Icon } = style;
-          return (
-            <div key={alert.id} className="p-3 flex items-start gap-3">
-              <span className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border ${style.tint}`}>
-                <Icon size={14} />
-              </span>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between gap-2">
-                  <h3 className="text-sm font-medium text-fg truncate">{alert.title}</h3>
-                  <time className="text-xs text-fg-subtle tabular-nums shrink-0">
-                    {relativeTime(alert.triggeredAt)}
-                  </time>
-                </div>
-                <p className="text-xs text-fg-muted mt-0.5 leading-5">{alert.description}</p>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+      {renderBody({ data, error, isLoading, refetch })}
     </section>
+  );
+}
+
+interface BodyProps {
+  data: AlertRow[] | undefined;
+  error: unknown;
+  isLoading: boolean;
+  refetch: () => unknown;
+}
+
+function renderBody({ data, error, isLoading, refetch }: BodyProps) {
+  if (error && !data) {
+    return <WidgetError message={String(error)} onRetry={() => void refetch()} />;
+  }
+  if (isLoading && !data) {
+    return <WidgetSkeleton variant="list" />;
+  }
+  if (data && data.length === 0) {
+    return <WidgetEmpty message="目前沒有告警" hint="正常運轉中" />;
+  }
+  return (
+    <div className="divide-y divide-border-soft">
+      {data?.map((alert) => {
+        const style = SEVERITY_STYLES[alert.severity];
+        const { Icon } = style;
+        return (
+          <div key={alert.id} className="p-3 flex items-start gap-3">
+            <span className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border ${style.tint}`}>
+              <Icon size={14} />
+            </span>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between gap-2">
+                <h3 className="text-sm font-medium text-fg truncate">{alert.title}</h3>
+                <time className="text-xs text-fg-subtle tabular-nums shrink-0">
+                  {relativeTime(alert.triggeredAt)}
+                </time>
+              </div>
+              <p className="text-xs text-fg-muted mt-0.5 leading-5">{alert.description}</p>
+            </div>
+          </div>
+        );
+      })}
+    </div>
   );
 }
 

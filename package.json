@@ -30,6 +30,7 @@
     "highcharts-react-official": "^3.2.3",
     "hono": "^4.6.16",
     "lucide-react": "^0.468.0",
+    "maplibre-gl": "^5.24.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router-dom": "^7.15.0",

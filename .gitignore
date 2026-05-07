@@ -46,3 +46,4 @@ out/
 .yarn/unplugged
 .yarn/install-state.gz
 .pnp.*
+.gstack/

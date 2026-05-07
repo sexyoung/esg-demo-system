@@ -2,24 +2,28 @@ import { useQuery } from '@tanstack/react-query';
 import { Activity, Coins, Leaf, Zap } from 'lucide-react';
 import { dashboardApi, dashboardKeys, type KpiSnapshot } from '../../api/dashboard';
 import { useCountUp } from '../../lib/animateNumber';
+import { WidgetError, WidgetSkeleton } from './WidgetState';
 
 interface Props {
   slug: string;
 }
 
 export function KpiStrip({ slug }: Props) {
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: dashboardKeys.kpi(slug, '24h'),
     queryFn: () => dashboardApi.kpi(slug, '24h'),
     refetchInterval: 60_000,
   });
 
-  if (error) {
+  if (error && !data) {
     return (
-      <div className="rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger">
-        無法載入 KPI：{String(error)}
+      <div className="rounded-lg border border-border bg-bg-elevated">
+        <WidgetError message={String(error)} onRetry={() => void refetch()} />
       </div>
     );
+  }
+  if (isLoading && !data) {
+    return <WidgetSkeleton variant="cards" />;
   }
 
   return (
