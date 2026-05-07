@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
+import { simulate } from '../../src/lib/formulas.js';
 
 export const simulateRouter = new Hono();
 
@@ -18,5 +19,6 @@ simulateRouter.post('/', async (c) => {
   if (!parsed.success) {
     return c.json({ message: 'invalid input', errors: parsed.error.flatten() }, 400);
   }
-  return c.json({ message: 'simulate() not implemented yet — Day 4 deliverable', echo: parsed.data }, 501);
+  const result = simulate(parsed.data);
+  return c.json(result);
 });

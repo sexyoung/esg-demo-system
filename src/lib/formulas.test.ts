@@ -93,17 +93,86 @@ describe('tariffAt (non-summer)', () => {
   });
 });
 
-describe('simulate (Day 4 deliverable)', () => {
-  it('throws until implemented', () => {
+describe('simulate', () => {
+  const acmeDefault = {
+    pvKw: 800,
+    essKwh: 2000,
+    tariffPlan: '三段式' as const,
+    essStrategy: 'PEAK_SHAVE' as const,
+    evPorts: 8,
+    tenantSlug: 'acme',
+  };
+
+  it('returns positive savings for Acme defaults', () => {
+    const r = simulate(acmeDefault);
+    expect(r.annualCostSavingNtd).toBeGreaterThan(0);
+    expect(r.annualCo2SavingTons).toBeGreaterThan(0);
+    expect(r.roiYears).not.toBeNull();
+    expect(r.roiYears!).toBeGreaterThan(2);
+    expect(r.roiYears!).toBeLessThan(20);
+  });
+
+  it('returns 96 daily preview points', () => {
+    const r = simulate(acmeDefault);
+    expect(r.series).toHaveLength(96);
+    expect(r.series[0].hour).toBe(0);
+    expect(r.series[95].hour).toBeCloseTo(23.75, 2);
+  });
+
+  it('PV=0 yields self-consumption ratio = 0 without NaN', () => {
+    const r = simulate({ ...acmeDefault, pvKw: 0 });
+    expect(r.selfConsumptionRatio).toBe(0);
+    expect(Number.isNaN(r.selfConsumptionRatio)).toBe(false);
+  });
+
+  it('ESS=0 with no savings still produces null ROI', () => {
+    const r = simulate({ ...acmeDefault, pvKw: 0, essKwh: 0, evPorts: 0 });
+    expect(r.roiYears).toBeNull();
+    expect(r.annualCostSavingNtd).toBe(0);
+  });
+
+  it('all sliders zero → savings = 0, ROI = null', () => {
+    const r = simulate({ ...acmeDefault, pvKw: 0, essKwh: 0, evPorts: 0 });
+    expect(r.annualCostSavingNtd).toBe(0);
+    expect(r.annualCo2SavingTons).toBe(0);
+    expect(r.peakReductionKw).toBe(0);
+    expect(r.roiYears).toBeNull();
+  });
+
+  it('three ESS strategies produce different outputs', () => {
+    const peakShave = simulate({ ...acmeDefault, essStrategy: 'PEAK_SHAVE' });
+    const selfCons = simulate({ ...acmeDefault, essStrategy: 'SELF_CONSUMPTION' });
+    const arbitrage = simulate({ ...acmeDefault, essStrategy: 'ARBITRAGE' });
+    expect(peakShave.annualCostSavingNtd).not.toBe(selfCons.annualCostSavingNtd);
+    expect(peakShave.annualCostSavingNtd).not.toBe(arbitrage.annualCostSavingNtd);
+    expect(arbitrage.annualCostSavingNtd).toBeGreaterThan(peakShave.annualCostSavingNtd);
+  });
+
+  it('three tariff plans produce different costs', () => {
+    const threeTier = simulate({ ...acmeDefault, tariffPlan: '三段式' });
+    const twoTier = simulate({ ...acmeDefault, tariffPlan: '二段式' });
+    const flat = simulate({ ...acmeDefault, tariffPlan: '流動' });
+    expect(threeTier.scenario.costNtd).not.toBe(twoTier.scenario.costNtd);
+    expect(twoTier.scenario.costNtd).not.toBe(flat.scenario.costNtd);
+  });
+
+  it('clamps negative inputs to 0', () => {
+    const r = simulate({ ...acmeDefault, pvKw: -100, essKwh: -500, evPorts: -3 });
+    expect(r.annualCostSavingNtd).toBe(0);
+    expect(r.capexNtd).toBe(0);
+  });
+
+  it('extreme values do not throw', () => {
     expect(() =>
-      simulate({
-        pvKw: 800,
-        essKwh: 2000,
-        tariffPlan: '三段式',
-        essStrategy: 'PEAK_SHAVE',
-        evPorts: 8,
-        tenantSlug: 'acme',
-      }),
-    ).toThrow();
+      simulate({ ...acmeDefault, pvKw: 2000, essKwh: 4000, evPorts: 20 }),
+    ).not.toThrow();
+  });
+
+  it('snapshot: Acme default scenario stays consistent', () => {
+    const r = simulate(acmeDefault);
+    expect(r.annualCostSavingNtd).toMatchInlineSnapshot('6755002');
+    expect(r.annualCo2SavingTons).toMatchInlineSnapshot('717.6');
+    expect(r.roiYears).toMatchInlineSnapshot('8.11');
+    expect(r.peakReductionKw).toMatchInlineSnapshot('41.8');
   });
 });
