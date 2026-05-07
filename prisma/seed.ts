@@ -251,13 +251,14 @@ async function main() {
       }
 
       for (const otherSite of sites.filter((s) => s.code !== 'ACM-01')) {
-        const meter = await prisma.asset.create({
-          data: { tenantId: tenant.id, siteId: otherSite.id, type: 'METER' as AssetType, name: `${otherSite.code} 主電表`, metadata: {} },
+        const peak = 600 + (otherSite.code.charCodeAt(otherSite.code.length - 1) % 5) * 100;
+        const building = await prisma.asset.create({
+          data: { tenantId: tenant.id, siteId: otherSite.id, type: 'BUILDING' as AssetType, name: `${otherSite.code} ${otherSite.name}`, metadata: { peakKw: peak } },
         });
         for (let q = 0; q < DAYS_OF_HISTORY * QUARTERS_PER_DAY; q++) {
           const ts = new Date(startTs + q * QUARTER_MS);
-          const v = industrialLoadKw(ts, 600 + (otherSite.code.charCodeAt(otherSite.code.length - 1) % 5) * 100);
-          readings.push({ assetId: meter.id, timestamp: ts, metric: 'POWER' as MetricType, value: round2(v) });
+          const v = industrialLoadKw(ts, peak);
+          readings.push({ assetId: building.id, timestamp: ts, metric: 'POWER' as MetricType, value: round2(v) });
         }
       }
     } else if (t.slug === 'beta') {

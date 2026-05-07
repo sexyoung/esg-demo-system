@@ -1,12 +1,18 @@
 import { useQuery } from '@tanstack/react-query';
-import { Building2, Layers, Bell as BellIcon } from 'lucide-react';
 import { useParams } from 'react-router-dom';
 import { api, queryKeys } from '../api/client';
+import { AssetTree } from '../components/dashboard/AssetTree';
+import { EnergyMixChart } from '../components/dashboard/EnergyMixChart';
+import { KpiStrip } from '../components/dashboard/KpiStrip';
+import { LivePowerTick } from '../components/dashboard/LivePowerTick';
 
 export function DashboardPage() {
   const { slug = 'acme' } = useParams<{ slug: string }>();
 
-  const tenantQuery = useQuery({ queryKey: queryKeys.tenant(slug), queryFn: () => api.tenant(slug) });
+  const tenantQuery = useQuery({
+    queryKey: queryKeys.tenant(slug),
+    queryFn: () => api.tenant(slug),
+  });
 
   if (tenantQuery.isLoading) {
     return <div className="p-8 text-fg-muted">載入 tenant…</div>;
@@ -16,49 +22,40 @@ export function DashboardPage() {
   }
 
   const tenant = tenantQuery.data;
-  const config = tenant.config as { heroLabel?: string; modules?: string[] };
+  const config = tenant.config as { heroLabel?: string };
 
   return (
-    <div className="p-6 space-y-6">
-      <section>
-        <div className="text-xs uppercase tracking-wider text-fg-subtle mb-1">Tenant</div>
-        <h1 className="text-2xl font-semibold">{tenant.name}</h1>
-        <div className="text-sm text-fg-muted mt-1">{config.heroLabel ?? tenant.industry}</div>
-      </section>
+    <div className="p-5 space-y-5 max-w-[1600px] mx-auto">
+      <header className="flex items-end justify-between flex-wrap gap-3">
+        <div>
+          <div className="text-xs uppercase tracking-wider text-fg-subtle mb-1">Tenant</div>
+          <h1 className="text-xl font-semibold">{tenant.name}</h1>
+          <div className="text-xs text-fg-muted mt-0.5">{config.heroLabel ?? tenant.industry}</div>
+        </div>
+        <div className="flex gap-3 text-xs text-fg-muted">
+          <Stat label="Sites" value={tenant._count.sites} />
+          <Stat label="Assets" value={tenant._count.assets} />
+          <Stat label="Alerts" value={tenant._count.alerts} />
+        </div>
+      </header>
 
-      <section className="grid gap-4 sm:grid-cols-3">
-        <ScaffoldCard icon={<Building2 size={18} />} label="Sites" value={tenant._count.sites} />
-        <ScaffoldCard icon={<Layers size={18} />} label="Assets" value={tenant._count.assets} />
-        <ScaffoldCard icon={<BellIcon size={18} />} label="Active Alerts" value={tenant._count.alerts} />
-      </section>
+      <LivePowerTick slug={slug} />
 
-      <section className="rounded-lg border border-border bg-bg-elevated p-5">
-        <div className="text-xs uppercase tracking-wider text-fg-subtle mb-2">Day 1 Shell</div>
-        <p className="text-sm text-fg-muted leading-6">
-          Day 1 只交付這層骨架：tenant switcher、router、API、SSE 已串好。Day 2 會把 KPI Strip、24h Energy Mix（Highcharts）、Asset Tree（D3）、Live Power Tick（uPlot）放進來。
-        </p>
-        {config.modules && (
-          <div className="mt-4 flex flex-wrap gap-2">
-            {config.modules.map((m) => (
-              <span key={m} className="rounded-md border border-border-soft bg-bg-soft px-2 py-1 text-xs text-fg-muted">
-                {m}
-              </span>
-            ))}
-          </div>
-        )}
-      </section>
+      <KpiStrip slug={slug} />
+
+      <div className="grid gap-5 lg:grid-cols-[1.5fr_1fr]">
+        <EnergyMixChart slug={slug} />
+        <AssetTree slug={slug} />
+      </div>
     </div>
   );
 }
 
-function ScaffoldCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: number }) {
+function Stat({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-lg border border-border bg-bg-elevated p-4">
-      <div className="flex items-center gap-2 text-fg-muted text-xs uppercase tracking-wider">
-        {icon}
-        {label}
-      </div>
-      <div className="mt-2 text-3xl font-semibold tabular-nums">{value.toLocaleString()}</div>
+    <div className="rounded-md border border-border-soft bg-bg-soft px-3 py-1.5">
+      <span className="text-fg-subtle">{label}</span>
+      <span className="ml-2 tabular-nums text-fg">{value}</span>
     </div>
   );
 }
