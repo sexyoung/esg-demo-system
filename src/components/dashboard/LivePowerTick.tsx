@@ -55,7 +55,7 @@ export function LivePowerTick({ slug }: Props) {
   const [stats, setStats] = useState<Stats>({ evtPerSec: 0, buffer: 0, status: 'connecting' });
   const [mode, setMode] = useState<'live' | 'paused'>('live');
   const [visibleRangeLabel, setVisibleRangeLabel] = useState<string>('');
-  const [hover, setHover] = useState<{ x: number; y: number; ts: number; kw: number } | null>(null);
+  const [hover, setHover] = useState<{ x: number; y: number; ts: number; kw: number; anomaly: boolean } | null>(null);
   const modeRef = useRef<'live' | 'paused'>('live');
   const pausedBufferRef = useRef<Array<[number, number]>>([]);
   const frozenRangeRef = useRef<{ min: number; max: number } | null>(null);
@@ -359,7 +359,9 @@ export function LivePowerTick({ slug }: Props) {
       const yOffset = overRect.top - containerRect.top;
       const dotX = xOffset + plot.valToPos(tVal, 'x', false);
       const dotY = yOffset + plot.valToPos(kwVal, 'y', false);
-      setHover({ x: dotX, y: dotY, ts: tVal, kw: kwVal });
+      const b = boundsRef.current;
+      const anomaly = kwVal > b.upper || kwVal < b.lower;
+      setHover({ x: dotX, y: dotY, ts: tVal, kw: kwVal, anomaly });
     }
 
     const onPointerDown = (e: PointerEvent) => {
@@ -555,15 +557,15 @@ export function LivePowerTick({ slug }: Props) {
         {mode === 'paused' && hover && (
           <>
             <div
-              className="absolute pointer-events-none rounded-full bg-accent-soft border-2 border-bg shadow-md"
+              className={`absolute pointer-events-none rounded-full border-2 border-bg shadow-md ${hover.anomaly ? 'bg-danger' : 'bg-accent-soft'}`}
               style={{ left: hover.x - 5, top: hover.y - 5, width: 10, height: 10 }}
             />
             <div
-              className="absolute pointer-events-none rounded-md border border-border-soft bg-bg-elevated/95 px-2 py-1 text-xs tabular-nums backdrop-blur-sm shadow-lg whitespace-nowrap"
+              className={`absolute pointer-events-none rounded-md border px-2 py-1 text-xs tabular-nums backdrop-blur-sm shadow-lg whitespace-nowrap ${hover.anomaly ? 'border-danger/60 bg-danger/15' : 'border-border-soft bg-bg-elevated/95'}`}
               style={{ left: hover.x + 12, top: Math.max(2, hover.y - 36) }}
             >
-              <div className="text-fg font-semibold">{hover.kw.toFixed(1)} kW</div>
-              <div className="text-fg-muted">{new Date(hover.ts * 1000).toLocaleTimeString('en-US', { hour12: false })}</div>
+              <div className={`font-semibold ${hover.anomaly ? 'text-danger' : 'text-fg'}`}>{hover.kw.toFixed(1)} kW</div>
+              <div className={hover.anomaly ? 'text-danger/80' : 'text-fg-muted'}>{new Date(hover.ts * 1000).toLocaleTimeString('en-US', { hour12: false })}</div>
             </div>
           </>
         )}
