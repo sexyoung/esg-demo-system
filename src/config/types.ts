@@ -28,7 +28,7 @@ export type WidgetId =
 
 export type RoleId = 'esg-manager' | 'plant-manager' | 'site-operator' | 'admin';
 
-export type ModuleId = 'dashboard' | 'simulator' | 'asset' | 'alert' | 'report';
+export type ModuleId = 'dashboard' | 'simulator' | 'asset' | 'alert' | 'report' | 'map';
 
 export type Filters = {
   dateRange?: 'today' | '7d' | '30d' | 'YTD' | 'all';

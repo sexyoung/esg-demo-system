@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { prisma } from '../lib/prisma.js';
+import { resolveSiteCounty } from '../../src/lib/countyLookup.js';
 
 export const sitesRouter = new Hono();
 
@@ -15,6 +16,7 @@ sitesRouter.get('/', async (c) => {
       name: s.name,
       latitude: s.latitude,
       longitude: s.longitude,
+      county: resolveSiteCounty(s.code, s.longitude, s.latitude),
       tenantSlug: s.tenant.slug,
       tenantName: s.tenant.name,
       industry: s.tenant.industry,

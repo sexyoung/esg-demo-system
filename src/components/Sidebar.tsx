@@ -9,6 +9,8 @@ interface NavItem {
   to: string;
   label: string;
   icon: typeof LayoutDashboard;
+  /** When true, `to` is an absolute path (not prefixed with /tenants/:slug). */
+  absolute?: boolean;
 }
 
 const ALL_ITEMS: readonly NavItem[] = [
@@ -17,6 +19,7 @@ const ALL_ITEMS: readonly NavItem[] = [
   { moduleId: 'asset', to: 'asset', label: 'Asset Tree', icon: Network },
   { moduleId: 'alert', to: 'alert', label: 'Alerts', icon: AlertTriangle },
   { moduleId: 'report', to: 'report', label: 'Reports', icon: FileText },
+  { moduleId: 'map', to: '/map', label: '全域地圖', icon: Map, absolute: true },
 ] as const;
 
 export function Sidebar() {
@@ -35,12 +38,14 @@ export function Sidebar() {
       <nav className="p-2">
         {items.map((item) => {
           const Icon = item.icon;
-          const path = `/tenants/${slug}${item.to ? `/${item.to}` : ''}`;
+          const path = item.absolute
+            ? item.to
+            : `/tenants/${slug}${item.to ? `/${item.to}` : ''}`;
           return (
             <NavLink
               key={item.label}
               to={path}
-              end={item.to === ''}
+              end={item.to === '' || item.absolute}
               className={({ isActive }) =>
                 `flex items-center gap-3 rounded-md px-3 py-2 text-sm transition ${
                   isActive ? 'bg-bg-soft text-accent-soft border border-border' : 'text-fg-muted hover:bg-bg-soft hover:text-fg'
@@ -53,12 +58,6 @@ export function Sidebar() {
           );
         })}
       </nav>
-      <div className="mt-2 mx-2 p-3 rounded-md border border-border-soft text-xs text-fg-subtle">
-        <NavLink to="/map" className={({ isActive }) => `flex items-center gap-2 ${isActive ? 'text-accent-soft' : 'hover:text-fg'}`}>
-          <Map size={14} />
-          全域監控地圖
-        </NavLink>
-      </div>
       <div className="mt-2 mx-2 p-3 rounded-md border border-border-soft text-xs text-fg-subtle flex items-center gap-2">
         <Activity size={12} className="text-success" />
         Build: Day 4 — role-aware shell

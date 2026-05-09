@@ -65,6 +65,19 @@ body {
   animation: animate-in-fade 220ms ease-out;
 }
 
+/* Site icon hover/active highlight on the D3 SVG overlay.
+ * Active state is set via [data-active=true] from React (matches side panel). */
+.site-icon {
+  transition: filter 160ms ease;
+}
+.site-icon:hover {
+  filter: brightness(1.25);
+}
+.site-icon[data-active="true"] {
+  filter: drop-shadow(0 0 5px rgba(0, 163, 223, 0.85))
+          drop-shadow(0 0 2px rgba(0, 163, 223, 0.55));
+}
+
 .energiq-popup-shell .maplibregl-popup-content {
   background: var(--color-bg-elevated);
   color: var(--color-fg);

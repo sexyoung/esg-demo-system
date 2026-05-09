@@ -11,7 +11,7 @@ export const ROLES: Record<RoleId, RolePreset> = {
       { kind: 'split', left: 'carbon-kpi', right: 'renewable-ratio', ratio: '1:1' },
       { kind: 'split', left: 'bu-ranking', right: 'report-export', ratio: '1.6:1' },
     ],
-    modules: ['dashboard', 'report'],
+    modules: ['dashboard', 'report', 'map'],
     defaultFilters: { dateRange: 'YTD', granularity: 'month', region: 'all', buId: 'all' },
     topBarExtras: ['region-bu-switcher', 'date-range-picker'],
     accent: 'green',

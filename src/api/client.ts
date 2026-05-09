@@ -16,6 +16,7 @@ export interface SiteRow {
   name: string;
   latitude: number;
   longitude: number;
+  county: string | null;
   tenantSlug: string;
   tenantName: string;
   industry: string;
