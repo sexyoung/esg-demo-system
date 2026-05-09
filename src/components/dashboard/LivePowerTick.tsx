@@ -1,10 +1,32 @@
-import { useEffect, useRef, useState } from 'react';
-import uPlot, { type AlignedData, type Options } from 'uplot';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import uPlot, { type AlignedData, type Options, type Plugin } from 'uplot';
 import 'uplot/dist/uPlot.min.css';
 import { useFps } from '../../lib/useFps';
 
 const MAX_POINTS = 600;
 const STATS_INTERVAL_MS = 1000;
+const NORMAL_BAND_FRACTION = 0.15;
+
+const TENANT_BASELINE_KW: Record<string, number> = {
+  acme: 1800,
+  beta: 220,
+  gamma: 6500,
+};
+
+interface Bounds {
+  upper: number;
+  lower: number;
+  baseline: number;
+}
+
+function boundsForSlug(slug: string): Bounds {
+  const baseline = TENANT_BASELINE_KW[slug] ?? 1000;
+  return {
+    baseline,
+    upper: baseline * (1 + NORMAL_BAND_FRACTION),
+    lower: baseline * (1 - NORMAL_BAND_FRACTION),
+  };
+}
 
 interface Props {
   slug: string;
@@ -24,11 +46,128 @@ export function LivePowerTick({ slug }: Props) {
   const rafRef = useRef<number | null>(null);
   const evtCountRef = useRef(0);
   const lastStatTsRef = useRef(performance.now());
+  const boundsRef = useRef<Bounds>(boundsForSlug(slug));
+  const xSplitsRef = useRef<number[]>([]);
   const { fps } = useFps();
   const [stats, setStats] = useState<Stats>({ evtPerSec: 0, buffer: 0, status: 'connecting' });
 
+  const bounds = useMemo(() => boundsForSlug(slug), [slug]);
+  useEffect(() => {
+    boundsRef.current = bounds;
+    plotRef.current?.redraw(false);
+  }, [bounds]);
+
   useEffect(() => {
     if (!containerRef.current) return;
+
+    const bandsPlugin: Plugin = {
+      hooks: {
+        drawClear: (u) => {
+          const b = boundsRef.current;
+          const ctx = u.ctx;
+          const left = u.bbox.left;
+          const top = u.bbox.top;
+          const width = u.bbox.width;
+          const height = u.bbox.height;
+          const bottom = top + height;
+
+          // anomaly fill: continuous segments where data is out of band
+          const ts = (u.data[0] ?? []) as number[];
+          const vs = (u.data[1] ?? []) as Array<number | null>;
+          if (ts.length > 1) {
+            ctx.save();
+            ctx.fillStyle = 'rgba(248, 113, 113, 0.16)';
+            let segStart: number | null = null;
+            for (let i = 0; i < ts.length; i++) {
+              const v = vs[i];
+              const isOut = v != null && (v > b.upper || v < b.lower);
+              if (isOut && segStart === null) segStart = i;
+              else if (!isOut && segStart !== null) {
+                const x1 = u.valToPos(ts[segStart], 'x', true);
+                const x2 = u.valToPos(ts[i], 'x', true);
+                ctx.fillRect(x1, top, Math.max(2, x2 - x1), height);
+                segStart = null;
+              }
+            }
+            if (segStart !== null) {
+              const x1 = u.valToPos(ts[segStart], 'x', true);
+              const x2 = u.valToPos(ts[ts.length - 1], 'x', true);
+              ctx.fillRect(x1, top, Math.max(2, x2 - x1), height);
+            }
+            ctx.restore();
+          }
+
+          // out-of-band horizontal zones (very faint, behind everything)
+          const upperY = u.valToPos(b.upper, 'y', true);
+          const lowerY = u.valToPos(b.lower, 'y', true);
+          ctx.save();
+          ctx.fillStyle = 'rgba(248, 113, 113, 0.04)';
+          if (upperY > top) ctx.fillRect(left, top, width, upperY - top);
+          if (lowerY < bottom) ctx.fillRect(left, lowerY, width, bottom - lowerY);
+          ctx.restore();
+        },
+        draw: (u) => {
+          const b = boundsRef.current;
+          const ctx = u.ctx;
+          const dpr = window.devicePixelRatio || 1;
+          const left = u.bbox.left;
+          const width = u.bbox.width;
+          const upperY = u.valToPos(b.upper, 'y', true);
+          const lowerY = u.valToPos(b.lower, 'y', true);
+          const baselineY = u.valToPos(b.baseline, 'y', true);
+
+          ctx.save();
+          ctx.lineWidth = 1 * dpr;
+          ctx.setLineDash([4 * dpr, 4 * dpr]);
+          ctx.strokeStyle = 'rgba(251, 191, 36, 0.55)';
+          ctx.beginPath();
+          ctx.moveTo(left, upperY);
+          ctx.lineTo(left + width, upperY);
+          ctx.moveTo(left, lowerY);
+          ctx.lineTo(left + width, lowerY);
+          ctx.stroke();
+
+          ctx.setLineDash([1 * dpr, 4 * dpr]);
+          ctx.strokeStyle = 'rgba(94, 110, 138, 0.5)';
+          ctx.beginPath();
+          ctx.moveTo(left, baselineY);
+          ctx.lineTo(left + width, baselineY);
+          ctx.stroke();
+
+          ctx.setLineDash([]);
+          ctx.fillStyle = 'rgba(251, 191, 36, 0.85)';
+          ctx.font = `${11 * dpr}px Inter, "Noto Sans TC"`;
+          ctx.textAlign = 'right';
+          ctx.textBaseline = 'alphabetic';
+          ctx.fillText(`+${Math.round(NORMAL_BAND_FRACTION * 100)}% ${Math.round(b.upper)} kW`, left + width - 4 * dpr, upperY - 3 * dpr);
+          ctx.fillText(`−${Math.round(NORMAL_BAND_FRACTION * 100)}% ${Math.round(b.lower)} kW`, left + width - 4 * dpr, lowerY + 12 * dpr);
+          ctx.fillStyle = 'rgba(148, 163, 184, 0.7)';
+          ctx.fillText(`baseline ${Math.round(b.baseline)} kW`, left + width - 4 * dpr, baselineY - 3 * dpr);
+          ctx.restore();
+
+          // staggered x-axis time labels (top row + bottom row alternating)
+          const splits = xSplitsRef.current;
+          if (splits.length > 0) {
+            const baseY = u.bbox.top + u.bbox.height + 8 * dpr;
+            const rowGap = 18 * dpr;
+            ctx.save();
+            ctx.font = `${13 * dpr}px Inter, "Noto Sans TC"`;
+            ctx.fillStyle = '#94a3b8';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            for (let i = 0; i < splits.length; i++) {
+              const t = splits[i];
+              const x = u.valToPos(t, 'x', true);
+              if (x < u.bbox.left - 2 || x > u.bbox.left + u.bbox.width + 2) continue;
+              const label = new Date(t * 1000).toLocaleTimeString('en-US', { hour12: false });
+              const y = baseY + (i % 2 === 0 ? 0 : rowGap);
+              ctx.fillText(label, x, y);
+            }
+            ctx.restore();
+          }
+        },
+      },
+    };
 
     const opts: Options = {
       width: containerRef.current.clientWidth,
@@ -36,6 +175,7 @@ export function LivePowerTick({ slug }: Props) {
       pxAlign: false,
       cursor: { show: false },
       legend: { show: false },
+      plugins: [bandsPlugin],
       scales: {
         x: { time: true },
         y: { auto: true },
@@ -45,7 +185,12 @@ export function LivePowerTick({ slug }: Props) {
           stroke: '#5e6e8a',
           grid: { stroke: 'rgba(36, 48, 73, 0.5)' },
           ticks: { show: false },
-          values: (_u, ticks) => ticks.map((t) => new Date(t * 1000).toLocaleTimeString('en-US', { hour12: false })),
+          size: 50,
+          space: 80,
+          values: (_u, splits) => {
+            xSplitsRef.current = splits;
+            return splits.map(() => '');
+          },
         },
         {
           stroke: '#5e6e8a',
