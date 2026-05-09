@@ -409,18 +409,18 @@ export function LivePowerTick({ slug }: Props) {
             onClick={handlePause}
             title="Pause (Space)"
             aria-label="Pause live chart"
-            className="absolute top-2 right-2 inline-flex items-center gap-1 rounded-md border border-border-soft bg-bg-elevated/85 px-2 py-1 text-xs text-fg-muted backdrop-blur-sm hover:text-fg hover:border-border transition-colors"
+            className="absolute top-2 right-2 z-10 inline-flex items-center gap-1 rounded-md border border-border-soft bg-bg-elevated/85 px-2 py-1 text-xs text-fg-muted backdrop-blur-sm hover:text-fg hover:border-border transition-colors"
           >
             <Pause className="h-3.5 w-3.5" />
           </button>
         ) : (
           <>
-            <div className="absolute top-2 left-2 inline-flex items-center gap-2 rounded-md border border-border-soft bg-bg-elevated/85 px-2 py-1 text-xs backdrop-blur-sm">
+            <div className="absolute top-2 left-2 z-10 inline-flex items-center gap-2 rounded-md border border-border-soft bg-bg-elevated/85 px-2 py-1 text-xs backdrop-blur-sm">
               <span className="font-semibold tracking-wide text-warn uppercase">Paused</span>
               <span className="tabular-nums text-fg-muted">{visibleRangeLabel}</span>
               <span className="text-fg-subtle normal-case">· drag chart to zoom</span>
             </div>
-            <div className="absolute top-2 right-2 inline-flex items-center gap-2">
+            <div className="absolute top-2 right-2 z-10 inline-flex items-center gap-2">
               <div className="inline-flex items-center gap-1 rounded-md border border-border-soft bg-bg-elevated/85 p-0.5 text-xs backdrop-blur-sm">
                 <button
                   type="button"
