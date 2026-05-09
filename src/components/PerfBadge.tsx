@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { useFps } from '../lib/useFps';
 
 const SAMPLE_BUFFER_SIZE = 80;
-const SPARK_W = 110;
-const SPARK_H = 40;
+const SPARK_W = 80;
+const SPARK_H = 28;
 const NICE_MAXES = [60, 75, 90, 120, 144, 165, 240];
 
 function ceilToNiceMax(peak: number): number {
@@ -48,7 +48,7 @@ export function PerfBadge() {
 
   return (
     <div
-      className="fixed bottom-3 right-3 z-50 rounded-md border border-border bg-bg-elevated/90 backdrop-blur px-3 py-2 text-[10px] tabular-nums flex items-center gap-3 shadow-lg select-none"
+      className="rounded-md border border-border bg-bg-soft px-2.5 py-1 text-[10px] tabular-nums flex items-center gap-2 select-none"
       title="Cmd/Ctrl+Shift+P 切換顯示"
     >
       <canvas
@@ -58,27 +58,27 @@ export function PerfBadge() {
         style={{ width: SPARK_W, height: SPARK_H }}
         className="block"
       />
-      <div className="relative shrink-0" style={{ width: 18, height: SPARK_H }}>
-        <span className="absolute left-0 -top-0.5 text-[9px] leading-none text-fg-subtle">{chartMax}</span>
+      <div className="relative shrink-0" style={{ width: 14, height: SPARK_H }}>
+        <span className="absolute left-0 -top-0.5 text-[8px] leading-none text-fg-subtle">{chartMax}</span>
         {chartMax > 90 && (
           <span
-            className="absolute left-0 text-[9px] leading-none text-success/70"
-            style={{ top: SPARK_H * (1 - 60 / chartMax) - 4 }}
+            className="absolute left-0 text-[8px] leading-none text-success/70"
+            style={{ top: SPARK_H * (1 - 60 / chartMax) - 3 }}
           >
             60
           </span>
         )}
         <span
-          className="absolute left-0 text-[9px] leading-none text-warn/70"
-          style={{ top: SPARK_H * (1 - 30 / chartMax) - 4 }}
+          className="absolute left-0 text-[8px] leading-none text-warn/70"
+          style={{ top: SPARK_H * (1 - 30 / chartMax) - 3 }}
         >
           30
         </span>
-        <span className="absolute left-0 -bottom-0.5 text-[9px] leading-none text-fg-subtle">0</span>
+        <span className="absolute left-0 -bottom-0.5 text-[8px] leading-none text-fg-subtle">0</span>
       </div>
-      <span className="flex items-baseline gap-1.5">
-        <span className={`text-2xl font-bold ${fpsClass}`}>{fps}</span>
-        <span className="text-fg-subtle text-sm font-semibold uppercase tracking-wider">fps</span>
+      <span className="flex items-baseline gap-1">
+        <span className={`text-base font-bold ${fpsClass}`}>{fps}</span>
+        <span className="text-fg-subtle text-[10px] font-semibold uppercase tracking-wider">fps</span>
       </span>
     </div>
   );

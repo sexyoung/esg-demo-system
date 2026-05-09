@@ -1,5 +1,6 @@
 import { Bell, User } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { PerfBadge } from './PerfBadge';
 import { RoleSwitcher } from './RoleSwitcher';
 import { TenantSwitcher } from './TenantSwitcher';
 
@@ -12,6 +13,7 @@ export function TopBar() {
         <span className="text-fg-subtle text-xs ml-2 hidden sm:inline">· operator-facing scenario comparison</span>
       </Link>
       <div className="flex items-center gap-3">
+        <PerfBadge />
         <TenantSwitcher />
         <RoleSwitcher />
         <button type="button" className="h-9 w-9 inline-flex items-center justify-center rounded-md border border-border text-fg-muted hover:text-fg hover:border-accent transition">
