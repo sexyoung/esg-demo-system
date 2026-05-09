@@ -265,7 +265,7 @@ export function LivePowerTick({ slug }: Props) {
         x: false,
         y: false,
         points: { show: false },
-        drag: { x: true, y: false, dist: 8, setScale: true },
+        drag: { x: false, y: false },
       },
       legend: { show: false },
       plugins: [bandsPlugin],
@@ -312,12 +312,73 @@ export function LivePowerTick({ slug }: Props) {
     const obs = new ResizeObserver(onResize);
     obs.observe(containerRef.current);
 
+    const over = plotRef.current.over;
+    let panState: { startX: number; startMin: number; startMax: number; pointerId: number } | null = null;
+
+    const onPointerDown = (e: PointerEvent) => {
+      if (modeRef.current !== 'paused' || e.button !== 0) return;
+      const plot = plotRef.current;
+      if (!plot) return;
+      const min = plot.scales.x.min;
+      const max = plot.scales.x.max;
+      if (typeof min !== 'number' || typeof max !== 'number') return;
+      panState = { startX: e.clientX, startMin: min, startMax: max, pointerId: e.pointerId };
+      over.setPointerCapture(e.pointerId);
+      over.style.cursor = 'grabbing';
+    };
+
+    const onPointerMove = (e: PointerEvent) => {
+      if (!panState || e.pointerId !== panState.pointerId) return;
+      const plot = plotRef.current;
+      const range = frozenRangeRef.current;
+      if (!plot || !range) return;
+      const rect = over.getBoundingClientRect();
+      const pxDelta = e.clientX - panState.startX;
+      const viewWidth = panState.startMax - panState.startMin;
+      const dataDelta = -pxDelta * (viewWidth / rect.width);
+      let newMin = panState.startMin + dataDelta;
+      let newMax = panState.startMax + dataDelta;
+      if (newMin < range.min) {
+        newMax += range.min - newMin;
+        newMin = range.min;
+      }
+      if (newMax > range.max) {
+        newMin -= newMax - range.max;
+        newMax = range.max;
+      }
+      plot.setScale('x', { min: newMin, max: newMax });
+      plot.redraw(false, true);
+      setVisibleRangeLabel(formatTimeRange(newMin, newMax));
+    };
+
+    const onPointerUp = (e: PointerEvent) => {
+      if (!panState || e.pointerId !== panState.pointerId) return;
+      try { over.releasePointerCapture(e.pointerId); } catch { /* already released */ }
+      over.style.cursor = modeRef.current === 'paused' ? 'grab' : '';
+      panState = null;
+    };
+
+    over.addEventListener('pointerdown', onPointerDown);
+    over.addEventListener('pointermove', onPointerMove);
+    over.addEventListener('pointerup', onPointerUp);
+    over.addEventListener('pointercancel', onPointerUp);
+
     return () => {
       obs.disconnect();
+      over.removeEventListener('pointerdown', onPointerDown);
+      over.removeEventListener('pointermove', onPointerMove);
+      over.removeEventListener('pointerup', onPointerUp);
+      over.removeEventListener('pointercancel', onPointerUp);
       plotRef.current?.destroy();
       plotRef.current = null;
     };
   }, []);
+
+  useEffect(() => {
+    const over = plotRef.current?.over;
+    if (!over) return;
+    over.style.cursor = mode === 'paused' ? 'grab' : '';
+  }, [mode]);
 
   useEffect(() => {
     setStats((s) => ({ ...s, status: 'connecting' }));
@@ -451,7 +512,7 @@ export function LivePowerTick({ slug }: Props) {
             <div className="absolute top-2 left-2 z-10 inline-flex items-center gap-2 rounded-md border border-border-soft bg-bg-elevated/85 px-2 py-1 text-xs backdrop-blur-sm">
               <span className="font-semibold tracking-wide text-warn uppercase">Paused</span>
               <span className="tabular-nums text-fg-muted">{visibleRangeLabel}</span>
-              <span className="text-fg-subtle normal-case">· drag or scroll to zoom</span>
+              <span className="text-fg-subtle normal-case">· scroll to zoom · drag to pan</span>
             </div>
             <div className="absolute top-2 right-2 z-10 inline-flex items-center gap-2">
               <div className="inline-flex items-center gap-1 rounded-md border border-border-soft bg-bg-elevated/85 p-0.5 text-xs backdrop-blur-sm">
