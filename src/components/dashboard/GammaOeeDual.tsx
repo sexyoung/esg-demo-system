@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import Highcharts from 'highcharts';
 import HighchartsReact from 'highcharts-react-official';
 import { useMemo, useState } from 'react';
-import { dashboardApi, dashboardKeys, type AssetRow, type MetricsResponse } from '../../api/dashboard';
+import { dashboardApi, dashboardKeys, type MetricsResponse } from '../../api/dashboard';
 
 interface Props {
   slug: string;

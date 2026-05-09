@@ -123,7 +123,7 @@ function pushGammaPeakShave(out: Recommendation[], kpi: KpiSnapshot) {
   });
 }
 
-function pushGammaOeeFloor(out: Recommendation[], kpi: KpiSnapshot) {
+function pushGammaOeeFloor(out: Recommendation[], _kpi: KpiSnapshot) {
   out.push({
     id: 'gamma_oee_kwh_per_wafer',
     title: '加入 kWh/wafer 單位耗能 KPI 追蹤',

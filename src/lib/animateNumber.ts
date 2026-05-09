@@ -6,10 +6,13 @@ export function useCountUp(target: number, durationMs = 150): number {
   const startValueRef = useRef(target);
   const rafRef = useRef<number | null>(null);
 
+  const valueRef = useRef(target);
+  valueRef.current = value;
+
   useEffect(() => {
-    if (target === value) return;
+    if (target === valueRef.current) return;
     startTsRef.current = null;
-    startValueRef.current = value;
+    startValueRef.current = valueRef.current;
     if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
 
     function step(now: number) {
