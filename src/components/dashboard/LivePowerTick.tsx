@@ -5,7 +5,7 @@ import 'uplot/dist/uPlot.min.css';
 import { useFps } from '../../lib/useFps';
 import { capPausedBuffer, formatTimeRange, mergePausedBuffer } from './livePowerTickHelpers';
 
-const MAX_POINTS = 600;
+const MAX_POINTS = 1800;
 const MAX_PAUSED_BUFFER = 1800; // 30 min @ 1Hz cap
 const STATS_INTERVAL_MS = 1000;
 const NORMAL_BAND_FRACTION = 0.15;
@@ -95,10 +95,12 @@ export function LivePowerTick({ slug }: Props) {
 
   const handleQuickZoom = useCallback((seconds: number | 'all') => {
     const range = frozenRangeRef.current;
-    if (!range || !plotRef.current) return;
+    const plot = plotRef.current;
+    if (!range || !plot) return;
     const { min, max } = range;
     const newMin = seconds === 'all' ? min : Math.max(min, max - seconds);
-    plotRef.current.setScale('x', { min: newMin, max });
+    plot.setScale('x', { min: newMin, max });
+    plot.redraw(false, true);
     setVisibleRangeLabel(formatTimeRange(newMin, max));
   }, []);
 
@@ -424,19 +426,19 @@ export function LivePowerTick({ slug }: Props) {
               <div className="inline-flex items-center gap-1 rounded-md border border-border-soft bg-bg-elevated/85 p-0.5 text-xs backdrop-blur-sm">
                 <button
                   type="button"
-                  onClick={() => handleQuickZoom(60)}
+                  onClick={() => handleQuickZoom(10)}
                   className="rounded px-2 py-0.5 text-fg-muted hover:text-fg hover:bg-border-soft/50 transition-colors"
-                  title="Zoom to last 1 minute"
+                  title="Zoom to last 10 seconds"
                 >
-                  1m
+                  10s
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleQuickZoom(300)}
+                  onClick={() => handleQuickZoom(30)}
                   className="rounded px-2 py-0.5 text-fg-muted hover:text-fg hover:bg-border-soft/50 transition-colors"
-                  title="Zoom to last 5 minutes"
+                  title="Zoom to last 30 seconds"
                 >
-                  5m
+                  30s
                 </button>
                 <button
                   type="button"
