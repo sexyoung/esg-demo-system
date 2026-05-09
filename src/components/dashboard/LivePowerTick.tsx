@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Pause } from 'lucide-react';
+import { Pause, Play } from 'lucide-react';
 import uPlot, { type AlignedData, type Options, type Plugin } from 'uplot';
 import 'uplot/dist/uPlot.min.css';
 import { useFps } from '../../lib/useFps';
@@ -378,7 +378,53 @@ export function LivePowerTick({ slug }: Props) {
           >
             <Pause className="h-3.5 w-3.5" />
           </button>
-        ) : null}
+        ) : (
+          <>
+            <div className="absolute top-2 left-2 inline-flex items-center gap-2 rounded-md border border-border-soft bg-bg-elevated/85 px-2 py-1 text-xs backdrop-blur-sm">
+              <span className="font-semibold tracking-wide text-warn uppercase">Paused</span>
+              <span className="tabular-nums text-fg-muted">{visibleRangeLabel}</span>
+              <span className="text-fg-subtle normal-case">· drag chart to zoom</span>
+            </div>
+            <div className="absolute top-2 right-2 inline-flex items-center gap-2">
+              <div className="inline-flex items-center gap-1 rounded-md border border-border-soft bg-bg-elevated/85 p-0.5 text-xs backdrop-blur-sm">
+                <button
+                  type="button"
+                  onClick={() => handleQuickZoom(60)}
+                  className="rounded px-2 py-0.5 text-fg-muted hover:text-fg hover:bg-border-soft/50 transition-colors"
+                  title="Zoom to last 1 minute"
+                >
+                  1m
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleQuickZoom(300)}
+                  className="rounded px-2 py-0.5 text-fg-muted hover:text-fg hover:bg-border-soft/50 transition-colors"
+                  title="Zoom to last 5 minutes"
+                >
+                  5m
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleQuickZoom('all')}
+                  className="rounded px-2 py-0.5 text-fg-muted hover:text-fg hover:bg-border-soft/50 transition-colors"
+                  title="Show full frozen range"
+                >
+                  All
+                </button>
+              </div>
+              <button
+                type="button"
+                onClick={handleResume}
+                title="Resume live (Esc)"
+                aria-label="Resume live chart"
+                className="inline-flex items-center gap-1 rounded-md border border-accent/40 bg-accent/15 px-2.5 py-1 text-xs font-medium text-accent backdrop-blur-sm hover:bg-accent/25 hover:border-accent/60 transition-colors"
+              >
+                <Play className="h-3.5 w-3.5" />
+                Live
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </section>
   );
