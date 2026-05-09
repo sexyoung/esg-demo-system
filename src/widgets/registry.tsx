@@ -14,6 +14,9 @@ import { CarbonKpi } from '../components/dashboard/esg/CarbonKpi';
 import { RenewableRatio } from '../components/dashboard/esg/RenewableRatio';
 import { ReportExport } from '../components/dashboard/esg/ReportExport';
 import { TargetVsActual } from '../components/dashboard/esg/TargetVsActual';
+import { AssetPulseGrid } from '../components/dashboard/operator/AssetPulseGrid';
+import { ProductionLineSchematic } from '../components/dashboard/operator/ProductionLineSchematic';
+import { RecentEventsStream } from '../components/dashboard/operator/RecentEventsStream';
 import { SopCard } from '../components/dashboard/operator/SopCard';
 import { WorkOrderEntry } from '../components/dashboard/operator/WorkOrderEntry';
 import { ConfigInspector } from '../components/dashboard/admin/ConfigInspector';
@@ -90,13 +93,28 @@ export const WIDGET_REGISTRY: Record<WidgetId, WidgetDefinition> = {
   'active-alerts': { id: 'active-alerts', title: 'Active Alerts', Component: wrap(AlertsPanel) },
   'equip-status': {
     id: 'equip-status',
-    title: 'Equipment Status',
+    title: 'Equipment Status (Tree)',
     Component: wrap(AssetTree),
+  },
+  'equipment-pulse': {
+    id: 'equipment-pulse',
+    title: 'Equipment Pulse',
+    Component: wrap(AssetPulseGrid),
+  },
+  'production-line': {
+    id: 'production-line',
+    title: 'Production Line',
+    Component: wrap(ProductionLineSchematic),
   },
   'realtime-trend': {
     id: 'realtime-trend',
     title: 'Realtime Trend',
     Component: wrap(LivePowerTick),
+  },
+  'recent-events': {
+    id: 'recent-events',
+    title: 'Recent Events Stream',
+    Component: wrap(RecentEventsStream),
   },
   'sop-card': {
     id: 'sop-card',

@@ -38,15 +38,18 @@ export const ROLES: Record<RoleId, RolePreset> = {
     id: 'site-operator',
     name: 'Site Operator / Engineer',
     shortName: 'Site Operator',
-    hero: 'active-alerts',
+    // Reordered to lead with real-time: live tick at top, event stream + alerts
+    // (the "what is happening RIGHT NOW" pair) above asset hierarchy + SOP/WO.
+    hero: 'live-tick',
     layout: [
-      { kind: 'full', widget: 'active-alerts' },
-      { kind: 'full', widget: 'equip-status' },
-      { kind: 'split', left: 'realtime-trend', right: 'sop-card', ratio: '1.6:1' },
-      { kind: 'full', widget: 'work-order-entry' },
+      { kind: 'full', widget: 'live-tick' },
+      { kind: 'split', left: 'recent-events', right: 'active-alerts', ratio: '1.6:1' },
+      { kind: 'full', widget: 'production-line' },
+      { kind: 'full', widget: 'equipment-pulse' },
+      { kind: 'split', left: 'sop-card', right: 'work-order-entry', ratio: '1:1' },
     ],
     modules: ['dashboard', 'asset', 'alert'],
-    defaultFilters: { dateRange: 'today', granularity: 'hour' },
+    defaultFilters: { dateRange: 'today', granularity: 'minute' },
     accent: 'orange',
   },
 
@@ -62,4 +65,7 @@ export const ROLES: Record<RoleId, RolePreset> = {
   },
 };
 
-export const ROLE_ORDER: RoleId[] = ['plant-manager', 'esg-manager', 'site-operator', 'admin'];
+// Org hierarchy order: executive → operational → admin.
+// (Demo default is still 'plant-manager' via store/role.ts so the Acme arc
+// starts on the operational dashboard.)
+export const ROLE_ORDER: RoleId[] = ['esg-manager', 'plant-manager', 'site-operator', 'admin'];

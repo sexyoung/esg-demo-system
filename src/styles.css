@@ -78,6 +78,22 @@ body {
           drop-shadow(0 0 2px rgba(0, 163, 223, 0.55));
 }
 
+/* Production-line schematic: flowing dot animation along connector arrow. */
+@keyframes connector-flow {
+  0% { transform: translateX(-12px); opacity: 0; }
+  20% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { transform: translateX(12px); opacity: 0; }
+}
+.connector-flow {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: rgba(0, 163, 223, 0.85);
+  box-shadow: 0 0 6px rgba(0, 163, 223, 0.6);
+  animation: connector-flow 1.6s ease-in-out infinite;
+}
+
 .energiq-popup-shell .maplibregl-popup-content {
   background: var(--color-bg-elevated);
   color: var(--color-fg);

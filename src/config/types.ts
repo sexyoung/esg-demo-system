@@ -16,7 +16,10 @@ export type WidgetId =
   // Site Operator pool
   | 'active-alerts'
   | 'equip-status'
+  | 'equipment-pulse'
+  | 'production-line'
   | 'realtime-trend'
+  | 'recent-events'
   | 'sop-card'
   | 'work-order-entry'
   // Admin pool
