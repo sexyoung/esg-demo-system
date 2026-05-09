@@ -5,6 +5,7 @@ import { TitleComponent, TooltipComponent } from 'echarts/components';
 import { CanvasRenderer } from 'echarts/renderers';
 import { useEffect, useMemo, useRef } from 'react';
 import { dashboardApi, dashboardKeys, type FlowsResponse } from '../../api/dashboard';
+import { CHART_FONT, ECHARTS_TOOLTIP_BASE } from '../../lib/chartTheme';
 
 echarts.use([EChartsSankey, TitleComponent, TooltipComponent, CanvasRenderer]);
 
@@ -91,10 +92,8 @@ function buildOption(data: FlowsResponse | undefined): echarts.EChartsCoreOption
 
   return {
     tooltip: {
+      ...ECHARTS_TOOLTIP_BASE,
       trigger: 'item',
-      backgroundColor: '#111a2e',
-      borderColor: '#243049',
-      textStyle: { color: '#e6edf7', fontSize: 12 },
       formatter: (info: { dataType: string; data: { source?: string; target?: string; value?: number; name?: string } }) => {
         if (info.dataType === 'edge') {
           return `${info.data.source} → ${info.data.target}<br/><b>${Math.round(info.data.value ?? 0).toLocaleString()}</b> kWh`;
@@ -110,7 +109,7 @@ function buildOption(data: FlowsResponse | undefined): echarts.EChartsCoreOption
         layoutIterations: 32,
         emphasis: { focus: 'adjacency' },
         lineStyle: { color: 'gradient', curveness: 0.5, opacity: 0.55 },
-        label: { color: '#e6edf7', fontFamily: 'Inter, "Noto Sans TC"', fontSize: 12 },
+        label: { color: '#e6edf7', fontFamily: CHART_FONT, fontSize: 12 },
         data: nodes,
         links: data.flows.map((f) => ({ source: f.source, target: f.target, value: f.value })),
       },

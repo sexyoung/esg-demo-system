@@ -24,7 +24,7 @@ export function LivePowerTick({ slug }: Props) {
   const rafRef = useRef<number | null>(null);
   const evtCountRef = useRef(0);
   const lastStatTsRef = useRef(performance.now());
-  const fps = useFps(500);
+  const { fps } = useFps();
   const [stats, setStats] = useState<Stats>({ evtPerSec: 0, buffer: 0, status: 'connecting' });
 
   useEffect(() => {

@@ -1,4 +1,5 @@
 import { Outlet } from 'react-router-dom';
+import { PerfBadge } from './PerfBadge';
 import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
 
@@ -12,6 +13,7 @@ export function Layout() {
           <Outlet />
         </main>
       </div>
+      <PerfBadge />
     </div>
   );
 }

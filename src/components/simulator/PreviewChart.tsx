@@ -1,6 +1,7 @@
 import Highcharts from 'highcharts';
 import HighchartsReact from 'highcharts-react-official';
 import { useMemo } from 'react';
+import { CHART_FONT, HIGHCHARTS_TOOLTIP } from '../../lib/chartTheme';
 import type { DailySeriesPoint } from '../../lib/formulas';
 
 interface Props {
@@ -32,7 +33,7 @@ function buildOptions(points: DailySeriesPoint[], baselinePeakKw: number): Highc
     chart: {
       backgroundColor: 'transparent',
       height: 280,
-      style: { fontFamily: 'Inter, "Noto Sans TC", sans-serif' },
+      style: { fontFamily: CHART_FONT },
     },
     title: { text: undefined },
     credits: { enabled: false },
@@ -74,11 +75,8 @@ function buildOptions(points: DailySeriesPoint[], baselinePeakKw: number): Highc
       itemHiddenStyle: { color: '#5e6e8a' },
     },
     tooltip: {
+      ...HIGHCHARTS_TOOLTIP,
       shared: true,
-      backgroundColor: '#111a2e',
-      borderColor: '#243049',
-      borderRadius: 6,
-      style: { color: '#e6edf7', fontSize: '11px' },
       valueDecimals: 0,
       valueSuffix: ' kW',
     },

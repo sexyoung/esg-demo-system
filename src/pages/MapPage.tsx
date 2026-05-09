@@ -41,7 +41,7 @@ export function MapPage() {
   const mapRef = useRef<maplibregl.Map | null>(null);
   const [debugMode, setDebugMode] = useState(false);
   const [renderMs, setRenderMs] = useState(0);
-  const fps = useFps(500);
+  const { fps } = useFps();
   const navigate = useNavigate();
 
   const { data: sites } = useQuery({

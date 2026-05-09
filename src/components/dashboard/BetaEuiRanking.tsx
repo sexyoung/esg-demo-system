@@ -3,6 +3,7 @@ import Highcharts from 'highcharts';
 import HighchartsReact from 'highcharts-react-official';
 import { useMemo } from 'react';
 import { dashboardApi, dashboardKeys, type AssetRow, type MetricsResponse } from '../../api/dashboard';
+import { CHART_FONT, HIGHCHARTS_TOOLTIP } from '../../lib/chartTheme';
 
 interface Props {
   slug: string;
@@ -83,7 +84,7 @@ function buildOptions(assets: AssetRow[] | undefined, metrics: MetricsResponse |
       type: 'bar',
       backgroundColor: 'transparent',
       height: Math.max(320, rows.length * 22 + 80),
-      style: { fontFamily: 'Inter, "Noto Sans TC", sans-serif' },
+      style: { fontFamily: CHART_FONT },
     },
     title: { text: undefined },
     credits: { enabled: false },
@@ -129,10 +130,7 @@ function buildOptions(assets: AssetRow[] | undefined, metrics: MetricsResponse |
     },
     legend: { enabled: false },
     tooltip: {
-      backgroundColor: '#111a2e',
-      borderColor: '#243049',
-      borderRadius: 6,
-      style: { color: '#e6edf7', fontSize: '11px' },
+      ...HIGHCHARTS_TOOLTIP,
       pointFormat: '<b>{point.y:.2f}</b> kWh/m²',
     },
     series: [
