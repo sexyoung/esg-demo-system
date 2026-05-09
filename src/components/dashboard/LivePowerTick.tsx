@@ -1,9 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import uPlot, { type AlignedData, type Options, type Plugin } from 'uplot';
 import 'uplot/dist/uPlot.min.css';
 import { useFps } from '../../lib/useFps';
+import { capPausedBuffer, formatTimeRange, mergePausedBuffer } from './livePowerTickHelpers';
 
 const MAX_POINTS = 600;
+const MAX_PAUSED_BUFFER = 1800; // 30 min @ 1Hz cap
 const STATS_INTERVAL_MS = 1000;
 const NORMAL_BAND_FRACTION = 0.15;
 
@@ -50,12 +52,53 @@ export function LivePowerTick({ slug }: Props) {
   const xSplitsRef = useRef<number[]>([]);
   const { fps } = useFps();
   const [stats, setStats] = useState<Stats>({ evtPerSec: 0, buffer: 0, status: 'connecting' });
+  const [mode, setMode] = useState<'live' | 'paused'>('live');
+  const [visibleRangeLabel, setVisibleRangeLabel] = useState<string>('');
+  const modeRef = useRef<'live' | 'paused'>('live');
+  const pausedBufferRef = useRef<Array<[number, number]>>([]);
+  const frozenRangeRef = useRef<{ min: number; max: number } | null>(null);
+
+  useEffect(() => {
+    modeRef.current = mode;
+  }, [mode]);
 
   const bounds = useMemo(() => boundsForSlug(slug), [slug]);
   useEffect(() => {
     boundsRef.current = bounds;
     plotRef.current?.redraw(false);
   }, [bounds]);
+
+  const handlePause = useCallback(() => {
+    const { ts } = dataRef.current;
+    if (ts.length === 0) return;
+    const min = ts[0];
+    const max = ts[ts.length - 1];
+    frozenRangeRef.current = { min, max };
+    setVisibleRangeLabel(formatTimeRange(min, max));
+    setMode('paused');
+  }, []);
+
+  const handleResume = useCallback(() => {
+    const { ts, kw } = dataRef.current;
+    mergePausedBuffer(ts, kw, pausedBufferRef.current, MAX_POINTS);
+    pausedBufferRef.current = [];
+    frozenRangeRef.current = null;
+    setVisibleRangeLabel('');
+    if (plotRef.current && ts.length > 0) {
+      plotRef.current.setScale('x', { min: ts[0], max: ts[ts.length - 1] });
+      plotRef.current.setData([ts, kw] as unknown as AlignedData);
+    }
+    setMode('live');
+  }, []);
+
+  const handleQuickZoom = useCallback((seconds: number | 'all') => {
+    const range = frozenRangeRef.current;
+    if (!range || !plotRef.current) return;
+    const { min, max } = range;
+    const newMin = seconds === 'all' ? min : Math.max(min, max - seconds);
+    plotRef.current.setScale('x', { min: newMin, max });
+    setVisibleRangeLabel(formatTimeRange(newMin, max));
+  }, []);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -228,6 +271,11 @@ export function LivePowerTick({ slug }: Props) {
 
   useEffect(() => {
     setStats((s) => ({ ...s, status: 'connecting' }));
+    setMode('live');
+    modeRef.current = 'live';
+    pausedBufferRef.current = [];
+    frozenRangeRef.current = null;
+    setVisibleRangeLabel('');
     dataRef.current = { ts: [], kw: [] };
     bufferRef.current = [];
     if (plotRef.current) {
@@ -239,18 +287,24 @@ export function LivePowerTick({ slug }: Props) {
     function flush() {
       const buf = bufferRef.current;
       if (buf.length > 0 && plotRef.current) {
-        const { ts, kw } = dataRef.current;
-        for (const [t, v] of buf) {
-          ts.push(t);
-          kw.push(v);
+        if (modeRef.current === 'paused') {
+          for (const entry of buf) pausedBufferRef.current.push(entry);
+          capPausedBuffer(pausedBufferRef.current, MAX_PAUSED_BUFFER);
+          bufferRef.current = [];
+        } else {
+          const { ts, kw } = dataRef.current;
+          for (const [t, v] of buf) {
+            ts.push(t);
+            kw.push(v);
+          }
+          if (ts.length > MAX_POINTS) {
+            const drop = ts.length - MAX_POINTS;
+            ts.splice(0, drop);
+            kw.splice(0, drop);
+          }
+          plotRef.current.setData([ts, kw] as unknown as AlignedData);
+          bufferRef.current = [];
         }
-        if (ts.length > MAX_POINTS) {
-          const drop = ts.length - MAX_POINTS;
-          ts.splice(0, drop);
-          kw.splice(0, drop);
-        }
-        plotRef.current.setData([ts, kw] as unknown as AlignedData);
-        bufferRef.current = [];
       }
       rafRef.current = null;
     }
