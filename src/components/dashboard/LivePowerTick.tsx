@@ -117,7 +117,7 @@ export function LivePowerTick({ slug }: Props) {
     const cursorX = e.clientX - rect.left;
     if (cursorX < 0 || cursorX > rect.width) return;
     const cursorVal = plot.posToVal(cursorX, 'x');
-    const factor = e.deltaY < 0 ? 1 / 1.2 : 1.2;
+    const factor = Math.exp(e.deltaY * 0.0008);
     let newMin = cursorVal - (cursorVal - curMin) * factor;
     let newMax = cursorVal + (curMax - cursorVal) * factor;
     if (newMax - newMin < 1) return;
