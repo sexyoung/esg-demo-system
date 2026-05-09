@@ -369,7 +369,7 @@ export function LivePowerTick({ slug }: Props) {
       const target = e.target as HTMLElement | null;
       if (target) {
         const tag = target.tagName;
-        if (tag === 'INPUT' || tag === 'TEXTAREA' || target.isContentEditable) return;
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || tag === 'BUTTON' || target.isContentEditable) return;
       }
       if (e.code === 'Space') {
         e.preventDefault();
