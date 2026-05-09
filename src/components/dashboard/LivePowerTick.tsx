@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Pause, Play } from 'lucide-react';
 import uPlot, { type AlignedData, type Options, type Plugin } from 'uplot';
 import 'uplot/dist/uPlot.min.css';
 import { useFps } from '../../lib/useFps';
@@ -365,7 +366,19 @@ export function LivePowerTick({ slug }: Props) {
           <span>buffer: <span className="text-warn">{stats.buffer}</span></span>
         </div>
       </div>
-      <div ref={containerRef} className="h-[180px] w-full" />
+      <div className="relative">
+        <div ref={containerRef} className="h-[180px] w-full" />
+        {mode === 'live' ? (
+          <button
+            type="button"
+            onClick={handlePause}
+            title="Pause (Space)"
+            className="absolute top-2 right-2 inline-flex items-center gap-1 rounded-md border border-border-soft bg-bg-elevated/85 px-2 py-1 text-xs text-fg-muted backdrop-blur-sm hover:text-fg hover:border-border transition-colors"
+          >
+            <Pause className="h-3.5 w-3.5" />
+          </button>
+        ) : null}
+      </div>
     </section>
   );
 }
