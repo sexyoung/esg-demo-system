@@ -85,11 +85,11 @@ export function LivePowerTick({ slug }: Props) {
     pausedBufferRef.current = [];
     frozenRangeRef.current = null;
     setVisibleRangeLabel('');
+    modeRef.current = 'live';
     if (plotRef.current && ts.length > 0) {
       plotRef.current.setScale('x', { min: ts[0], max: ts[ts.length - 1] });
       plotRef.current.setData([ts, kw] as unknown as AlignedData);
     }
-    modeRef.current = 'live';
     setMode('live');
   }, []);
 
