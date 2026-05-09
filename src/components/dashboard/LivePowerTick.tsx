@@ -88,6 +88,7 @@ export function LivePowerTick({ slug }: Props) {
       plotRef.current.setScale('x', { min: ts[0], max: ts[ts.length - 1] });
       plotRef.current.setData([ts, kw] as unknown as AlignedData);
     }
+    modeRef.current = 'live';
     setMode('live');
   }, []);
 
