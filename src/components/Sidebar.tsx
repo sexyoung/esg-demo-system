@@ -1,23 +1,36 @@
 import { Activity, AlertTriangle, FileText, LayoutDashboard, Map, Network, Sliders } from 'lucide-react';
 import { NavLink, useParams } from 'react-router-dom';
+import { ROLES } from '../config/roles';
+import type { ModuleId } from '../config/types';
+import { useRole } from '../store/role';
 
-const items = [
-  { to: '', label: 'Dashboard', icon: LayoutDashboard },
-  { to: 'simulator', label: 'What-if Simulator', icon: Sliders },
-  { to: 'asset', label: 'Asset Tree', icon: Network },
-  { to: 'alert', label: 'Alerts', icon: AlertTriangle },
-  { to: 'report', label: 'Reports', icon: FileText },
+interface NavItem {
+  moduleId: ModuleId;
+  to: string;
+  label: string;
+  icon: typeof LayoutDashboard;
+}
+
+const ALL_ITEMS: readonly NavItem[] = [
+  { moduleId: 'dashboard', to: '', label: 'Dashboard', icon: LayoutDashboard },
+  { moduleId: 'simulator', to: 'simulator', label: 'What-if Simulator', icon: Sliders },
+  { moduleId: 'asset', to: 'asset', label: 'Asset Tree', icon: Network },
+  { moduleId: 'alert', to: 'alert', label: 'Alerts', icon: AlertTriangle },
+  { moduleId: 'report', to: 'report', label: 'Reports', icon: FileText },
 ] as const;
 
 export function Sidebar() {
   const params = useParams<{ slug?: string }>();
   const slug = params.slug ?? 'acme';
+  const currentRoleId = useRole((s) => s.currentRoleId);
+  const role = ROLES[currentRoleId];
+  const items = ALL_ITEMS.filter((item) => role.modules.includes(item.moduleId));
 
   return (
     <aside className="w-56 shrink-0 border-r border-border bg-bg-elevated">
       <div className="p-4 border-b border-border">
         <div className="text-xs uppercase tracking-wider text-fg-subtle mb-1">Navigation</div>
-        <div className="text-sm text-fg-muted">租戶模組</div>
+        <div className="text-sm text-fg-muted">{role.shortName} 模組</div>
       </div>
       <nav className="p-2">
         {items.map((item) => {
@@ -48,7 +61,7 @@ export function Sidebar() {
       </div>
       <div className="mt-2 mx-2 p-3 rounded-md border border-border-soft text-xs text-fg-subtle flex items-center gap-2">
         <Activity size={12} className="text-success" />
-        Build: Day 1 — shell only
+        Build: Day 4 — role-aware shell
       </div>
     </aside>
   );

@@ -34,6 +34,38 @@ export interface AssetRow {
   site: { code: string; name: string } | null;
 }
 
+export interface EsgMonthly {
+  month: string;
+  co2Tons: number;
+  renewableRatio: number;
+}
+
+export interface EsgBuRow {
+  id: string;
+  name: string;
+  reductionPct: number;
+  co2Tons: number;
+}
+
+export interface EsgTargetSpec {
+  kind: 'RE100' | 'SBTi-1.5C' | 'NetZero-2050';
+  label: string;
+  baselineYear: number;
+  reductionPctByDeadline: number;
+  deadline: number;
+}
+
+export interface EsgSummary {
+  slug: string;
+  generatedAt: string;
+  target: EsgTargetSpec;
+  monthly: EsgMonthly[];
+  forecastEoy: { co2Tons: number; reductionPct: number };
+  ytdReduction: { pct: number; tonsAvoided: number };
+  currentMonth: { co2Tons: number; deltaVsLastMonthPct: number };
+  buRanking: EsgBuRow[];
+}
+
 export interface FlowsResponse {
   range: string;
   unit: 'kWh';
@@ -62,6 +94,7 @@ export const dashboardApi = {
     jsonFetch<MetricsResponse>(`/api/tenants/${slug}/metrics?range=${range}&metric=${metric}`),
   assets: (slug: string) => jsonFetch<AssetRow[]>(`/api/tenants/${slug}/assets`),
   flows: (slug: string, range = '24h') => jsonFetch<FlowsResponse>(`/api/tenants/${slug}/flows?range=${range}`),
+  esgSummary: (slug: string) => jsonFetch<EsgSummary>(`/api/tenants/${slug}/esg-summary`),
 };
 
 export const dashboardKeys = {
@@ -69,4 +102,5 @@ export const dashboardKeys = {
   metrics: (slug: string, range: string, metric: string) => ['metrics', slug, range, metric] as const,
   assets: (slug: string) => ['assets', slug] as const,
   flows: (slug: string, range: string) => ['flows', slug, range] as const,
+  esgSummary: (slug: string) => ['esg-summary', slug] as const,
 };

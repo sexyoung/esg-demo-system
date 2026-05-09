@@ -47,6 +47,24 @@ body {
   animation: pulse-dot 1.6s ease-in-out infinite;
 }
 
+/* Role switch: fade-in + slight slide-up. Stagger via animation-delay on rows. */
+@keyframes role-fade-in {
+  0% { opacity: 0; transform: translateY(6px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.role-row-mount {
+  animation: role-fade-in 280ms ease-out backwards;
+}
+
+/* Toast slide-in for transient confirmations (work order, export). */
+@keyframes animate-in-fade {
+  0% { opacity: 0; transform: translateY(4px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.animate-in {
+  animation: animate-in-fade 220ms ease-out;
+}
+
 .energiq-popup-shell .maplibregl-popup-content {
   background: var(--color-bg-elevated);
   color: var(--color-fg);

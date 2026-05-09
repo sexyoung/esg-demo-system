@@ -1,5 +1,6 @@
 import { Bell, User } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { RoleSwitcher } from './RoleSwitcher';
 import { TenantSwitcher } from './TenantSwitcher';
 
 export function TopBar() {
@@ -12,6 +13,7 @@ export function TopBar() {
       </Link>
       <div className="flex items-center gap-3">
         <TenantSwitcher />
+        <RoleSwitcher />
         <button type="button" className="h-9 w-9 inline-flex items-center justify-center rounded-md border border-border text-fg-muted hover:text-fg hover:border-accent transition">
           <Bell size={16} />
         </button>

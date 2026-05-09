@@ -47,3 +47,6 @@ out/
 .yarn/install-state.gz
 .pnp.*
 .gstack/
+
+# Demo screenshot artifacts (browse skill output)
+demo-checkpoints/

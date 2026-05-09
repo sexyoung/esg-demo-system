@@ -1,18 +1,15 @@
 import { useQuery } from '@tanstack/react-query';
 import { useParams } from 'react-router-dom';
 import { api, queryKeys } from '../api/client';
-import { AlertsPanel } from '../components/dashboard/AlertsPanel';
-import { AssetTree } from '../components/dashboard/AssetTree';
-import { BetaEuiRanking } from '../components/dashboard/BetaEuiRanking';
-import { EnergyMixChart } from '../components/dashboard/EnergyMixChart';
-import { GammaOeeDual } from '../components/dashboard/GammaOeeDual';
-import { KpiStrip } from '../components/dashboard/KpiStrip';
-import { LivePowerTick } from '../components/dashboard/LivePowerTick';
-import { RecommendationEngine } from '../components/dashboard/RecommendationEngine';
-import { SankeyChart } from '../components/dashboard/SankeyChart';
+import { ROLES } from '../config/roles';
+import { getTenantConfig } from '../config/tenants';
+import type { LayoutRow } from '../config/types';
+import { useRole } from '../store/role';
+import { LayoutRenderer } from '../widgets/LayoutRenderer';
 
 export function DashboardPage() {
   const { slug = 'acme' } = useParams<{ slug: string }>();
+  const currentRoleId = useRole((s) => s.currentRoleId);
 
   const tenantQuery = useQuery({
     queryKey: queryKeys.tenant(slug),
@@ -28,12 +25,21 @@ export function DashboardPage() {
 
   const tenant = tenantQuery.data;
   const config = tenant.config as { heroLabel?: string };
+  const role = ROLES[currentRoleId];
+  const tenantConfig = getTenantConfig(slug);
+
+  // Merge role base layout with tenant-specific appended rows.
+  const baseLayout = role.layout;
+  const appendLayout: LayoutRow[] = tenantConfig?.roleOverrides?.[currentRoleId]?.appendLayout ?? [];
+  const layout: LayoutRow[] = [...baseLayout, ...appendLayout];
 
   return (
     <div className="p-5 space-y-5 max-w-[1600px] mx-auto">
       <header className="flex items-end justify-between flex-wrap gap-3">
         <div>
-          <div className="text-xs uppercase tracking-wider text-fg-subtle mb-1">Tenant</div>
+          <div className="text-xs uppercase tracking-wider text-fg-subtle mb-1">
+            Tenant · {role.shortName}
+          </div>
           <h1 className="text-xl font-semibold">{tenant.name}</h1>
           <div className="text-xs text-fg-muted mt-0.5">{config.heroLabel ?? tenant.industry}</div>
         </div>
@@ -44,30 +50,14 @@ export function DashboardPage() {
         </div>
       </header>
 
-      <LivePowerTick slug={slug} />
-
-      <KpiStrip slug={slug} />
-
-      <div className="grid gap-5 lg:grid-cols-[1.6fr_1fr]">
-        <TenantHeroWidget slug={slug} />
-        <RecommendationEngine slug={slug} />
-      </div>
-
-      <div className="grid gap-5 lg:grid-cols-[1.6fr_1fr]">
-        <EnergyMixChart slug={slug} />
-        <AlertsPanel slug={slug} />
-      </div>
-
-      <AssetTree slug={slug} />
+      <LayoutRenderer
+        layout={layout}
+        tenantSlug={slug}
+        roleId={currentRoleId}
+        filters={role.defaultFilters}
+      />
     </div>
   );
-}
-
-function TenantHeroWidget({ slug }: { slug: string }) {
-  if (slug === 'acme') return <SankeyChart slug={slug} />;
-  if (slug === 'beta') return <BetaEuiRanking slug={slug} />;
-  if (slug === 'gamma') return <GammaOeeDual slug={slug} />;
-  return <SankeyChart slug={slug} />;
 }
 
 function Stat({ label, value }: { label: string; value: number }) {
