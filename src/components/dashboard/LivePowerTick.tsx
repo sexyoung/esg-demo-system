@@ -107,6 +107,15 @@ export function LivePowerTick({ slug }: Props) {
 
     const bandsPlugin: Plugin = {
       hooks: {
+        setScale: (u, key) => {
+          if (key !== 'x') return;
+          if (modeRef.current !== 'paused') return;
+          const min = u.scales.x.min;
+          const max = u.scales.x.max;
+          if (typeof min === 'number' && typeof max === 'number') {
+            setVisibleRangeLabel(formatTimeRange(min, max));
+          }
+        },
         drawClear: (u) => {
           const b = boundsRef.current;
           const ctx = u.ctx;
@@ -218,7 +227,13 @@ export function LivePowerTick({ slug }: Props) {
       width: containerRef.current.clientWidth,
       height: containerRef.current.clientHeight,
       pxAlign: false,
-      cursor: { show: false },
+      cursor: {
+        show: true,
+        x: false,
+        y: false,
+        points: { show: false },
+        drag: { x: true, y: false, dist: 8, setScale: true },
+      },
       legend: { show: false },
       plugins: [bandsPlugin],
       scales: {
