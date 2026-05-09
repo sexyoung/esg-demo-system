@@ -55,6 +55,7 @@ export function LivePowerTick({ slug }: Props) {
   const [stats, setStats] = useState<Stats>({ evtPerSec: 0, buffer: 0, status: 'connecting' });
   const [mode, setMode] = useState<'live' | 'paused'>('live');
   const [visibleRangeLabel, setVisibleRangeLabel] = useState<string>('');
+  const [hover, setHover] = useState<{ x: number; y: number; ts: number; kw: number } | null>(null);
   const modeRef = useRef<'live' | 'paused'>('live');
   const pausedBufferRef = useRef<Array<[number, number]>>([]);
   const frozenRangeRef = useRef<{ min: number; max: number } | null>(null);
@@ -102,6 +103,7 @@ export function LivePowerTick({ slug }: Props) {
     plot.setScale('x', { min: newMin, max });
     plot.redraw(false, true);
     setVisibleRangeLabel(formatTimeRange(newMin, max));
+    setHover(null);
   }, []);
 
   const handleWheel = useCallback((e: WheelEvent) => {
@@ -126,6 +128,7 @@ export function LivePowerTick({ slug }: Props) {
     plot.setScale('x', { min: newMin, max: newMax });
     plot.redraw(false, true);
     setVisibleRangeLabel(formatTimeRange(newMin, newMax));
+    setHover(null);
   }, []);
 
   useEffect(() => {
@@ -315,6 +318,50 @@ export function LivePowerTick({ slug }: Props) {
     const over = plotRef.current.over;
     let panState: { startX: number; startMin: number; startMax: number; pointerId: number } | null = null;
 
+    function updateHover(clientX: number) {
+      const plot = plotRef.current;
+      const container = containerRef.current;
+      if (!plot || !container || modeRef.current !== 'paused') {
+        setHover(null);
+        return;
+      }
+      const { ts, kw } = dataRef.current;
+      if (ts.length === 0) {
+        setHover(null);
+        return;
+      }
+      const overRect = over.getBoundingClientRect();
+      const xPx = clientX - overRect.left;
+      if (xPx < 0 || xPx > overRect.width) {
+        setHover(null);
+        return;
+      }
+      const xVal = plot.posToVal(xPx, 'x');
+      let lo = 0;
+      let hi = ts.length - 1;
+      while (lo < hi) {
+        const mid = (lo + hi) >> 1;
+        if (ts[mid] < xVal) lo = mid + 1;
+        else hi = mid;
+      }
+      let idx = lo;
+      if (lo > 0 && Math.abs(ts[lo - 1] - xVal) < Math.abs(ts[lo] - xVal)) idx = lo - 1;
+      const tVal = ts[idx];
+      const kwVal = kw[idx];
+      const xMin = plot.scales.x.min;
+      const xMax = plot.scales.x.max;
+      if (typeof xMin !== 'number' || typeof xMax !== 'number' || tVal < xMin || tVal > xMax) {
+        setHover(null);
+        return;
+      }
+      const containerRect = container.getBoundingClientRect();
+      const xOffset = overRect.left - containerRect.left;
+      const yOffset = overRect.top - containerRect.top;
+      const dotX = xOffset + plot.valToPos(tVal, 'x', false);
+      const dotY = yOffset + plot.valToPos(kwVal, 'y', false);
+      setHover({ x: dotX, y: dotY, ts: tVal, kw: kwVal });
+    }
+
     const onPointerDown = (e: PointerEvent) => {
       if (modeRef.current !== 'paused' || e.button !== 0) return;
       const plot = plotRef.current;
@@ -328,27 +375,30 @@ export function LivePowerTick({ slug }: Props) {
     };
 
     const onPointerMove = (e: PointerEvent) => {
-      if (!panState || e.pointerId !== panState.pointerId) return;
-      const plot = plotRef.current;
-      const range = frozenRangeRef.current;
-      if (!plot || !range) return;
-      const rect = over.getBoundingClientRect();
-      const pxDelta = e.clientX - panState.startX;
-      const viewWidth = panState.startMax - panState.startMin;
-      const dataDelta = -pxDelta * (viewWidth / rect.width);
-      let newMin = panState.startMin + dataDelta;
-      let newMax = panState.startMax + dataDelta;
-      if (newMin < range.min) {
-        newMax += range.min - newMin;
-        newMin = range.min;
+      if (panState && e.pointerId === panState.pointerId) {
+        const plot = plotRef.current;
+        const range = frozenRangeRef.current;
+        if (plot && range) {
+          const rect = over.getBoundingClientRect();
+          const pxDelta = e.clientX - panState.startX;
+          const viewWidth = panState.startMax - panState.startMin;
+          const dataDelta = -pxDelta * (viewWidth / rect.width);
+          let newMin = panState.startMin + dataDelta;
+          let newMax = panState.startMax + dataDelta;
+          if (newMin < range.min) {
+            newMax += range.min - newMin;
+            newMin = range.min;
+          }
+          if (newMax > range.max) {
+            newMin -= newMax - range.max;
+            newMax = range.max;
+          }
+          plot.setScale('x', { min: newMin, max: newMax });
+          plot.redraw(false, true);
+          setVisibleRangeLabel(formatTimeRange(newMin, newMax));
+        }
       }
-      if (newMax > range.max) {
-        newMin -= newMax - range.max;
-        newMax = range.max;
-      }
-      plot.setScale('x', { min: newMin, max: newMax });
-      plot.redraw(false, true);
-      setVisibleRangeLabel(formatTimeRange(newMin, newMax));
+      updateHover(e.clientX);
     };
 
     const onPointerUp = (e: PointerEvent) => {
@@ -358,10 +408,13 @@ export function LivePowerTick({ slug }: Props) {
       panState = null;
     };
 
+    const onPointerLeave = () => setHover(null);
+
     over.addEventListener('pointerdown', onPointerDown);
     over.addEventListener('pointermove', onPointerMove);
     over.addEventListener('pointerup', onPointerUp);
     over.addEventListener('pointercancel', onPointerUp);
+    over.addEventListener('pointerleave', onPointerLeave);
 
     return () => {
       obs.disconnect();
@@ -369,6 +422,7 @@ export function LivePowerTick({ slug }: Props) {
       over.removeEventListener('pointermove', onPointerMove);
       over.removeEventListener('pointerup', onPointerUp);
       over.removeEventListener('pointercancel', onPointerUp);
+      over.removeEventListener('pointerleave', onPointerLeave);
       plotRef.current?.destroy();
       plotRef.current = null;
     };
@@ -378,6 +432,7 @@ export function LivePowerTick({ slug }: Props) {
     const over = plotRef.current?.over;
     if (!over) return;
     over.style.cursor = mode === 'paused' ? 'grab' : '';
+    if (mode === 'live') setHover(null);
   }, [mode]);
 
   useEffect(() => {
@@ -497,6 +552,21 @@ export function LivePowerTick({ slug }: Props) {
       </div>
       <div className="relative">
         <div ref={containerRef} className="h-[180px] w-full" />
+        {mode === 'paused' && hover && (
+          <>
+            <div
+              className="absolute pointer-events-none rounded-full bg-accent-soft border-2 border-bg shadow-md"
+              style={{ left: hover.x - 5, top: hover.y - 5, width: 10, height: 10 }}
+            />
+            <div
+              className="absolute pointer-events-none rounded-md border border-border-soft bg-bg-elevated/95 px-2 py-1 text-xs tabular-nums backdrop-blur-sm shadow-lg whitespace-nowrap"
+              style={{ left: hover.x + 12, top: Math.max(2, hover.y - 36) }}
+            >
+              <div className="text-fg font-semibold">{hover.kw.toFixed(1)} kW</div>
+              <div className="text-fg-muted">{new Date(hover.ts * 1000).toLocaleTimeString('en-US', { hour12: false })}</div>
+            </div>
+          </>
+        )}
         {mode === 'live' ? (
           <button
             type="button"
