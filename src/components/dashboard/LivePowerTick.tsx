@@ -104,6 +104,37 @@ export function LivePowerTick({ slug }: Props) {
     setVisibleRangeLabel(formatTimeRange(newMin, max));
   }, []);
 
+  const handleWheel = useCallback((e: WheelEvent) => {
+    if (modeRef.current !== 'paused') return;
+    const plot = plotRef.current;
+    const range = frozenRangeRef.current;
+    if (!plot || !range) return;
+    e.preventDefault();
+    const curMin = plot.scales.x.min;
+    const curMax = plot.scales.x.max;
+    if (typeof curMin !== 'number' || typeof curMax !== 'number') return;
+    const rect = plot.over.getBoundingClientRect();
+    const cursorX = e.clientX - rect.left;
+    if (cursorX < 0 || cursorX > rect.width) return;
+    const cursorVal = plot.posToVal(cursorX, 'x');
+    const factor = e.deltaY < 0 ? 1 / 1.2 : 1.2;
+    let newMin = cursorVal - (cursorVal - curMin) * factor;
+    let newMax = cursorVal + (curMax - cursorVal) * factor;
+    if (newMax - newMin < 1) return;
+    newMin = Math.max(range.min, newMin);
+    newMax = Math.min(range.max, newMax);
+    plot.setScale('x', { min: newMin, max: newMax });
+    plot.redraw(false, true);
+    setVisibleRangeLabel(formatTimeRange(newMin, newMax));
+  }, []);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    container.addEventListener('wheel', handleWheel, { passive: false });
+    return () => container.removeEventListener('wheel', handleWheel);
+  }, [handleWheel]);
+
   useEffect(() => {
     if (!containerRef.current) return;
 
@@ -420,7 +451,7 @@ export function LivePowerTick({ slug }: Props) {
             <div className="absolute top-2 left-2 z-10 inline-flex items-center gap-2 rounded-md border border-border-soft bg-bg-elevated/85 px-2 py-1 text-xs backdrop-blur-sm">
               <span className="font-semibold tracking-wide text-warn uppercase">Paused</span>
               <span className="tabular-nums text-fg-muted">{visibleRangeLabel}</span>
-              <span className="text-fg-subtle normal-case">· drag chart to zoom</span>
+              <span className="text-fg-subtle normal-case">· drag or scroll to zoom</span>
             </div>
             <div className="absolute top-2 right-2 z-10 inline-flex items-center gap-2">
               <div className="inline-flex items-center gap-1 rounded-md border border-border-soft bg-bg-elevated/85 p-0.5 text-xs backdrop-blur-sm">
