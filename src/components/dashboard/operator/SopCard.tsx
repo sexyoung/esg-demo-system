@@ -3,6 +3,7 @@ import { CheckCircle2, ClipboardList, Wrench } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { dashboardApi, dashboardKeys } from '../../../api/dashboard';
 import { evaluateRules, type Recommendation } from '../../../lib/recommendations';
+import { WidgetEmpty, WidgetError, WidgetSkeleton } from '../WidgetState';
 
 interface Props {
   slug: string;
@@ -45,6 +46,11 @@ export function SopCard({ slug }: Props) {
     });
   }
 
+  const hasData = !!kpiQuery.data || !!flowsQuery.data;
+  const fetchError = kpiQuery.error ?? flowsQuery.error;
+  const showError = !hasData && !!fetchError;
+  const showLoading = !hasData && !showError && (kpiQuery.isLoading || flowsQuery.isLoading);
+
   return (
     <section className="rounded-lg border border-warn/30 bg-gradient-to-br from-warn/5 to-bg-elevated overflow-hidden">
       <header className="flex items-center justify-between px-4 py-2 border-b border-border-soft">
@@ -53,14 +59,24 @@ export function SopCard({ slug }: Props) {
           <span className="font-semibold tracking-wide">現場操作 SOP</span>
         </div>
         <div className="flex items-center gap-1 text-[10px] text-fg-subtle tabular-nums">
-          {sops.length - acknowledged.size} 待處理 · {acknowledged.size} 已確認
+          {hasData && <>{sops.length - acknowledged.size} 待處理 · {acknowledged.size} 已確認</>}
         </div>
       </header>
-      <div className="divide-y divide-border-soft">
-        {sops.length === 0 && (
-          <div className="p-5 text-fg-muted text-sm">目前沒有待處理的 SOP</div>
-        )}
-        {sops.map((r) => {
+      {showError ? (
+        <WidgetError
+          message={fetchError instanceof Error ? fetchError.message : String(fetchError)}
+          onRetry={() => {
+            void kpiQuery.refetch();
+            void flowsQuery.refetch();
+          }}
+        />
+      ) : showLoading ? (
+        <WidgetSkeleton variant="list" />
+      ) : sops.length === 0 ? (
+        <WidgetEmpty message="目前沒有待處理的 SOP" hint="運行條件正常時這裡會是空的" />
+      ) : (
+        <div className="divide-y divide-border-soft">
+          {sops.map((r) => {
           const tint = SEVERITY_TINT[r.confidence];
           const isAck = acknowledged.has(r.id);
           return (
@@ -95,7 +111,8 @@ export function SopCard({ slug }: Props) {
             </article>
           );
         })}
-      </div>
+        </div>
+      )}
     </section>
   );
 }

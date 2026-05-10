@@ -3,6 +3,7 @@ import { CircuitBoard, Sparkles } from 'lucide-react';
 import { useMemo } from 'react';
 import { dashboardApi, dashboardKeys } from '../../api/dashboard';
 import { evaluateRules, type Recommendation } from '../../lib/recommendations';
+import { WidgetEmpty, WidgetError, WidgetSkeleton } from './WidgetState';
 
 interface Props {
   slug: string;
@@ -29,6 +30,11 @@ export function RecommendationEngine({ slug }: Props) {
     [slug, kpiQuery.data, flowsQuery.data],
   );
 
+  const hasData = !!kpiQuery.data || !!flowsQuery.data;
+  const fetchError = kpiQuery.error ?? flowsQuery.error;
+  const showError = !hasData && !!fetchError;
+  const showLoading = !hasData && !showError && (kpiQuery.isLoading || flowsQuery.isLoading);
+
   return (
     <section className="rounded-lg border border-accent/30 bg-gradient-to-br from-accent/5 to-bg-elevated overflow-hidden">
       <div className="flex items-center justify-between px-4 py-2 border-b border-border-soft">
@@ -41,10 +47,20 @@ export function RecommendationEngine({ slug }: Props) {
           Rule-based · LLM-ready
         </div>
       </div>
-      <div className="divide-y divide-border-soft">
-        {recs.length === 0 && (
-          <div className="p-5 text-fg-muted text-sm">目前沒有觸發的建議</div>
-        )}
+      {showError ? (
+        <WidgetError
+          message={fetchError instanceof Error ? fetchError.message : String(fetchError)}
+          onRetry={() => {
+            void kpiQuery.refetch();
+            void flowsQuery.refetch();
+          }}
+        />
+      ) : showLoading ? (
+        <WidgetSkeleton variant="list" />
+      ) : recs.length === 0 ? (
+        <WidgetEmpty message="目前沒有觸發的建議" hint="規則尚未匹配當前的 KPI / 能流條件" />
+      ) : (
+        <div className="divide-y divide-border-soft">
         {recs.map((r) => {
           const c = CONFIDENCE_LABEL[r.confidence];
           return (
@@ -63,7 +79,8 @@ export function RecommendationEngine({ slug }: Props) {
             </article>
           );
         })}
-      </div>
+        </div>
+      )}
     </section>
   );
 }

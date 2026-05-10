@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
+import { dataAnchor } from '../lib/time-window.js';
 import { cache } from '../middleware/cache.js';
 
 export const metricsRouter = new Hono();
@@ -36,7 +37,8 @@ metricsRouter.get(
     const tenant = await prisma.tenant.findUnique({ where: { slug }, select: { id: true } });
     if (!tenant) return c.json({ message: 'tenant not found' }, 404);
 
-    const since = new Date(Date.now() - RANGE_MS[range]);
+    const anchor = await dataAnchor(tenant.id, metric);
+    const since = new Date(anchor.getTime() - RANGE_MS[range]);
     const readings = await prisma.metricReading.findMany({
       where: {
         metric,

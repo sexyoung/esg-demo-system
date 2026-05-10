@@ -6,6 +6,7 @@ import { CanvasRenderer } from 'echarts/renderers';
 import { useEffect, useMemo, useRef } from 'react';
 import { dashboardApi, dashboardKeys, type FlowsResponse } from '../../api/dashboard';
 import { CHART_FONT, ECHARTS_TOOLTIP_BASE } from '../../lib/chartTheme';
+import { WidgetEmpty, WidgetError, WidgetSkeleton } from './WidgetState';
 
 echarts.use([EChartsSankey, TitleComponent, TooltipComponent, CanvasRenderer]);
 
@@ -24,11 +25,15 @@ export function SankeyChart({ slug }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<echarts.ECharts | null>(null);
 
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: dashboardKeys.flows(slug, '24h'),
     queryFn: () => dashboardApi.flows(slug, '24h'),
     refetchInterval: 60_000,
   });
+
+  const showError = !data && !!error;
+  const showLoading = !data && !showError && isLoading;
+  const showEmpty = !!data && data.flows.length === 0;
 
   const option = useMemo(() => buildOption(data), [data]);
 
@@ -56,7 +61,7 @@ export function SankeyChart({ slug }: Props) {
           24h 能流圖（Sankey）<span className="text-fg-subtle normal-case tracking-normal">· ECharts</span>
         </div>
         <div className="text-xs text-fg-muted tabular-nums">
-          {data && (
+          {data && data.flows.length > 0 && (
             <>
               <span className="text-warn">PV</span> {Math.round(data.totals.pv).toLocaleString()} kWh
               <span className="mx-2 text-fg-subtle">·</span>
@@ -65,9 +70,23 @@ export function SankeyChart({ slug }: Props) {
           )}
         </div>
       </div>
-      <div ref={containerRef} className="h-[300px] w-full" />
-      {isLoading && <div className="px-4 pb-2 text-xs text-fg-subtle">載入中…</div>}
-      {error && <div className="px-4 pb-2 text-xs text-danger">load error</div>}
+      <div className="relative">
+        <div ref={containerRef} className="h-[300px] w-full" />
+        {(showError || showLoading || showEmpty) && (
+          <div className="absolute inset-0 bg-bg-elevated">
+            {showError ? (
+              <WidgetError
+                message={error instanceof Error ? error.message : String(error)}
+                onRetry={() => void refetch()}
+              />
+            ) : showLoading ? (
+              <WidgetSkeleton height={300} variant="chart" />
+            ) : (
+              <WidgetEmpty message="此時段尚無能流資料" hint="Sankey 需要至少一條 PV → Load / Grid → Load 連線" />
+            )}
+          </div>
+        )}
+      </div>
     </section>
   );
 }

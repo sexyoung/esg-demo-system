@@ -3,6 +3,7 @@ import * as d3 from 'd3';
 import { useMemo } from 'react';
 import { api, queryKeys } from '../../api/client';
 import { dashboardApi, dashboardKeys, type AssetRow } from '../../api/dashboard';
+import { WidgetEmpty, WidgetError, WidgetSkeleton } from './WidgetState';
 
 interface Props {
   slug: string;
@@ -33,6 +34,13 @@ export function AssetTree({ slug }: Props) {
     [primarySiteCode, assetsQuery.data],
   );
 
+  const hasData = !!assetsQuery.data || !!tenantQuery.data;
+  const fetchError = assetsQuery.error ?? tenantQuery.error;
+  const showError = !hasData && !!fetchError;
+  const showLoading =
+    !showError && (assetsQuery.isLoading || tenantQuery.isLoading) && !assetsQuery.data;
+  const showEmpty = !showLoading && !showError && !layout;
+
   return (
     <section className="rounded-lg border border-border bg-bg-elevated overflow-hidden">
       <div className="flex items-center justify-between px-4 py-2 border-b border-border-soft">
@@ -45,10 +53,20 @@ export function AssetTree({ slug }: Props) {
           </span>
         )}
       </div>
-      <div className="overflow-auto max-h-[480px]">
-        {assetsQuery.isLoading || tenantQuery.isLoading ? (
-          <div className="p-6 text-fg-muted text-sm">載入中…</div>
-        ) : layout ? (
+      {showError ? (
+        <WidgetError
+          message={fetchError instanceof Error ? fetchError.message : String(fetchError)}
+          onRetry={() => {
+            void assetsQuery.refetch();
+            void tenantQuery.refetch();
+          }}
+        />
+      ) : showLoading ? (
+        <WidgetSkeleton variant="tree" />
+      ) : showEmpty ? (
+        <WidgetEmpty message="無資產資料" hint="此租戶尚未建立場域或設備層級" />
+      ) : layout ? (
+        <div className="overflow-auto max-h-[480px]">
           <svg width={layout.width} height={layout.height} className="block">
             <g transform={`translate(${layout.padX},${layout.padY})`}>
               {layout.links.map((d, i) => (
@@ -75,10 +93,8 @@ export function AssetTree({ slug }: Props) {
               ))}
             </g>
           </svg>
-        ) : (
-          <div className="p-6 text-fg-muted text-sm">無資產資料</div>
-        )}
-      </div>
+        </div>
+      ) : null}
     </section>
   );
 }

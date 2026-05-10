@@ -12,7 +12,9 @@
       "Skill(plan-design-review)",
       "Skill(investigate)",
       "Skill(office-hours)",
-      "Skill(browse)"
+      "Skill(browse)",
+      "Skill(context-save)",
+      "Skill(commit-commands:commit)"
     ]
   },
   "statusLine": {

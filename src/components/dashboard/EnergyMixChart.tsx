@@ -4,13 +4,14 @@ import HighchartsReact from 'highcharts-react-official';
 import { useMemo } from 'react';
 import { dashboardApi, dashboardKeys, type MetricsResponse } from '../../api/dashboard';
 import { CHART_FONT, HIGHCHARTS_TOOLTIP } from '../../lib/chartTheme';
+import { WidgetEmpty, WidgetError, WidgetSkeleton } from './WidgetState';
 
 interface Props {
   slug: string;
 }
 
 export function EnergyMixChart({ slug }: Props) {
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: dashboardKeys.metrics(slug, '24h', 'POWER'),
     queryFn: () => dashboardApi.metrics(slug, '24h', 'POWER'),
     refetchInterval: 60_000,
@@ -18,18 +19,31 @@ export function EnergyMixChart({ slug }: Props) {
 
   const options = useMemo<Highcharts.Options>(() => buildOptions(slug, data), [slug, data]);
 
+  const showError = !data && !!error;
+  const showLoading = !data && !showError && isLoading;
+  const showEmpty = !!data && (!data.points || data.points.length === 0);
+
   return (
     <section className="rounded-lg border border-border bg-bg-elevated overflow-hidden">
       <div className="flex items-center justify-between px-4 py-2 border-b border-border-soft">
         <div className="text-xs uppercase tracking-wider text-fg-muted">
           24h 能源組合 <span className="text-fg-subtle normal-case tracking-normal">· Highcharts</span>
         </div>
-        {isLoading && <span className="text-xs text-fg-subtle">…</span>}
-        {error && <span className="text-xs text-danger">load error</span>}
       </div>
-      <div className="px-2 pb-2">
-        <HighchartsReact highcharts={Highcharts} options={options} />
-      </div>
+      {showError ? (
+        <WidgetError
+          message={error instanceof Error ? error.message : String(error)}
+          onRetry={() => void refetch()}
+        />
+      ) : showLoading ? (
+        <WidgetSkeleton height={280} variant="chart" />
+      ) : showEmpty ? (
+        <WidgetEmpty message="此時段尚無能源組合資料" hint="後端回傳的 metrics 為空" />
+      ) : (
+        <div className="px-2 pb-2">
+          <HighchartsReact highcharts={Highcharts} options={options} />
+        </div>
+      )}
     </section>
   );
 }
