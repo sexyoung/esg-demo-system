@@ -3,6 +3,11 @@
   "framework": "vite",
   "buildCommand": "prisma generate && vite build",
   "outputDirectory": "dist",
+  "functions": {
+    "api/**": {
+      "includeFiles": "node_modules/.prisma/client/**"
+    }
+  },
   "rewrites": [
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ],
