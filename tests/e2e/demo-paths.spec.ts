@@ -29,7 +29,7 @@ test.describe('Demo arc — 4 paths', () => {
     await expect(page.getByRole('button', { name: /Tenant\s+Acme/ })).toBeVisible();
 
     // Plant Manager hero is Live Power Tick (CSS uppercase, DOM is title-case).
-    await expect(page.getByText(/Live Power Tick/i)).toBeVisible();
+    await expect(page.getByText(/Live Power Tick/i).first()).toBeVisible();
 
     // KPI strip with the 4 main metrics.
     await expect(page.getByText('今日總用電')).toBeVisible();
@@ -70,9 +70,11 @@ test.describe('Demo arc — 4 paths', () => {
 
     await switchRole(page, 'Plant Manager', /Site Operator.*Engineer/);
 
-    // Compact 4-row Site Operator layout (CSS uppercase; DOM is title-case).
-    await expect(page.getByText(/Live Power Tick/i)).toBeVisible();
-    await expect(page.getByText(/Recent Events/i)).toBeVisible();
+    // Compact Site Operator layout (CSS uppercase; DOM is title-case).
+    // .first() because the layout config registers live-tick + recent-events
+    // twice for orientation responsiveness (one hidden via media query).
+    await expect(page.getByText(/Live Power Tick/i).first()).toBeVisible();
+    await expect(page.getByText('事件流').first()).toBeVisible();
     await expect(page.getByText(/產線即時監控/)).toBeVisible();
     await expect(page.getByText(/Equipment Pulse/i)).toBeVisible();
 

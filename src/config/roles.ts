@@ -43,7 +43,16 @@ export const ROLES: Record<RoleId, RolePreset> = {
     // tucked into a bottom action bar with slide-up drawers.
     hero: 'live-tick',
     layout: [
-      { kind: 'split', left: 'live-tick', right: 'recent-events', ratio: '1.6:1' },
+      // Landscape (lg+): live-tick + events as a 1.6:1 split, stretch row
+      // absorbs all the extra vertical space. KPI strip is hidden here —
+      // there's no room on iPad standard landscape (810h).
+      { kind: 'split', left: 'live-tick', right: 'recent-events', ratio: '1.6:1', stretch: true, hideOn: 'portrait' },
+      // Portrait (<lg): live-tick + events become two full-width rows —
+      // live-tick stretches to absorb extra vertical room, events stays
+      // natural height. KPI strip slots in between for visual rhythm.
+      { kind: 'full', widget: 'live-tick', stretch: true, hideOn: 'landscape' },
+      { kind: 'full', widget: 'recent-events', hideOn: 'landscape' },
+      { kind: 'full', widget: 'kpi-strip', hideOn: 'landscape' },
       { kind: 'full', widget: 'production-line' },
       { kind: 'full', widget: 'equipment-pulse' },
       { kind: 'full', widget: 'operator-actions' },

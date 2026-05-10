@@ -540,8 +540,8 @@ export function LivePowerTick({ slug }: Props) {
     stats.status === 'live' ? 'bg-success live-dot' : stats.status === 'error' ? 'bg-danger' : 'bg-warn';
 
   return (
-    <section className="rounded-lg border border-border bg-bg-elevated overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-2 border-b border-border-soft">
+    <section className="rounded-lg border border-border bg-bg-elevated overflow-hidden flex flex-col min-h-0 flex-1">
+      <div className="flex items-center justify-between px-4 py-2 border-b border-border-soft shrink-0">
         <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-fg-muted">
           <span className={`inline-block h-2 w-2 rounded-full ${dotClass}`} />
           <span className="font-semibold tracking-wide">Live Power Tick</span>
@@ -553,8 +553,8 @@ export function LivePowerTick({ slug }: Props) {
           <span>buffer: <span className="text-warn">{stats.buffer}</span></span>
         </div>
       </div>
-      <div className="relative">
-        <div ref={containerRef} className="h-[180px] w-full" />
+      <div className="relative flex-1 min-h-[140px]">
+        <div ref={containerRef} className="absolute inset-0" />
         {mode === 'paused' && hover && (
           <>
             <div

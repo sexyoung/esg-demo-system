@@ -42,8 +42,8 @@ export type Filters = {
 };
 
 export type LayoutRow =
-  | { kind: 'full'; widget: WidgetId }
-  | { kind: 'split'; left: WidgetId; right: WidgetId; ratio?: '1.6:1' | '1:1' | '2:1' };
+  | { kind: 'full'; widget: WidgetId; stretch?: boolean; hideOn?: 'portrait' | 'landscape' }
+  | { kind: 'split'; left: WidgetId; right: WidgetId; ratio?: '1.6:1' | '1:1' | '2:1'; stretch?: boolean; hideOn?: 'portrait' | 'landscape' };
 
 export type RolePreset = {
   id: RoleId;

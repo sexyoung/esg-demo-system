@@ -75,12 +75,47 @@ const SEVERITY_TEXT: Record<Severity, string> = {
 };
 
 const HOLD_COUNT = 5;
+// Buffer larger than HOLD_COUNT so severity filters never run dry —
+// rare severities (e.g. critical) might only appear every 5-10 ticks.
+const BUFFER_COUNT = 24;
 const TICK_MIN_MS = 2200;
 const TICK_MAX_MS = 4500;
+
+type SeverityFilter = 'all' | Severity;
+
+const FILTER_META: Record<SeverityFilter, { label: string; dot: string; activeBorder: string; activeText: string }> = {
+  all: {
+    label: '全部',
+    dot: 'bg-fg-subtle/60',
+    activeBorder: 'border-fg-muted',
+    activeText: 'text-fg',
+  },
+  info: {
+    label: '一般',
+    dot: 'bg-success',
+    activeBorder: 'border-success/60',
+    activeText: 'text-success',
+  },
+  warn: {
+    label: '警示',
+    dot: 'bg-warn',
+    activeBorder: 'border-warn/60',
+    activeText: 'text-warn',
+  },
+  critical: {
+    label: '嚴重',
+    dot: 'bg-danger',
+    activeBorder: 'border-danger/60',
+    activeText: 'text-danger',
+  },
+};
+
+const FILTER_ORDER: SeverityFilter[] = ['all', 'info', 'warn', 'critical'];
 
 export function RecentEventsStream({ slug }: Props) {
   const pool = useMemo(() => EVENT_POOLS[slug] ?? EVENT_POOLS.acme, [slug]);
   const [events, setEvents] = useState<EventEntry[]>(() => seedInitial(pool));
+  const [filter, setFilter] = useState<SeverityFilter>('all');
   const tickRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -98,7 +133,7 @@ export function RecentEventsStream({ slug }: Props) {
             id: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
             ts: Date.now(),
           };
-          return [fresh, ...prev].slice(0, HOLD_COUNT);
+          return [fresh, ...prev].slice(0, BUFFER_COUNT);
         });
         schedule();
       }, delay);
@@ -109,20 +144,56 @@ export function RecentEventsStream({ slug }: Props) {
     };
   }, [pool]);
 
+  const counts = useMemo(() => {
+    const c: Record<SeverityFilter, number> = { all: events.length, info: 0, warn: 0, critical: 0 };
+    for (const e of events) c[e.severity]++;
+    return c;
+  }, [events]);
+
+  const visible = useMemo(() => {
+    const filtered = filter === 'all' ? events : events.filter((e) => e.severity === filter);
+    return filtered.slice(0, HOLD_COUNT);
+  }, [events, filter]);
+
   return (
     <section className="rounded-lg border border-border bg-bg-elevated overflow-hidden h-full flex flex-col">
-      <header className="flex items-center justify-between px-4 py-2 border-b border-border-soft">
-        <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-fg-muted">
-          <Activity size={13} className="text-success" />
-          <span className="font-semibold tracking-wide">現場事件流 · Recent Events</span>
+      <header className="flex items-center justify-between gap-2 px-3 py-2 border-b border-border-soft min-w-0">
+        <div className="flex items-center gap-1.5 text-xs uppercase tracking-wider text-fg-muted shrink min-w-0">
+          <Activity size={13} className="text-success shrink-0" />
+          <span className="font-semibold tracking-wide truncate">事件流</span>
         </div>
-        <div className="flex items-center gap-1.5 text-[10px] text-fg-subtle tabular-nums">
-          <span className="inline-block h-1.5 w-1.5 rounded-full bg-success live-dot" />
-          live · last {HOLD_COUNT}
+        <div className="flex items-center gap-0.5 shrink-0" role="tablist" aria-label="事件嚴重度篩選">
+          {FILTER_ORDER.map((f) => {
+            const active = filter === f;
+            const meta = FILTER_META[f];
+            return (
+              <button
+                key={f}
+                type="button"
+                onClick={() => setFilter(f)}
+                title={meta.label}
+                role="tab"
+                aria-selected={active}
+                className={`inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10px] font-medium tabular-nums transition ${
+                  active
+                    ? `${meta.activeBorder} ${meta.activeText} bg-bg-soft`
+                    : 'border-transparent text-fg-muted hover:text-fg hover:border-border-soft'
+                }`}
+              >
+                <span className={`inline-block h-1.5 w-1.5 rounded-full ${meta.dot}`} />
+                <span>{counts[f]}</span>
+              </button>
+            );
+          })}
         </div>
       </header>
       <ul className="flex-1 overflow-hidden divide-y divide-border-soft">
-        {events.map((e, idx) => {
+        {visible.length === 0 && (
+          <li className="px-3 py-3 text-[11px] text-fg-subtle italic">
+            目前沒有 {FILTER_META[filter].label} 等級的事件
+          </li>
+        )}
+        {visible.map((e, idx) => {
           // Older events fade slightly
           const opacity = 1 - idx * 0.08;
           return (
@@ -149,11 +220,11 @@ export function RecentEventsStream({ slug }: Props) {
 }
 
 function seedInitial(pool: EventTemplate[]): EventEntry[] {
-  // Seed 6 events with timestamps stepping back from now, so the stream
-  // starts populated and not empty.
+  // Fill the buffer (not just visible count) so severity filters never start
+  // empty — rare severities take a while to surface from random ticks.
   const out: EventEntry[] = [];
   const now = Date.now();
-  for (let i = 0; i < HOLD_COUNT; i++) {
+  for (let i = 0; i < BUFFER_COUNT; i++) {
     const tpl = pool[Math.floor(Math.random() * pool.length)];
     out.push({
       ...tpl,
