@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Hono } from 'hono';
-import { tenantsRouter } from './tenants';
+import { tenantsRouter } from './tenants.js';
 
 const app = new Hono().route('/api/tenants', tenantsRouter);
 

@@ -1,4 +1,4 @@
-import { PrismaClient, type AssetType, type AlertSeverity, type MetricType } from '@prisma/client';
+import { PrismaClient, Prisma, type AssetType, type AlertSeverity, type MetricType } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -18,7 +18,7 @@ interface TenantSpec {
   slug: string;
   name: string;
   industry: string;
-  config: Record<string, unknown>;
+  config: Prisma.InputJsonValue;
   sites: SiteSpec[];
 }
 

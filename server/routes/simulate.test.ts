@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { Hono } from 'hono';
-import { simulateRouter } from './simulate';
+import { simulateRouter } from './simulate.js';
+
+type SimulateResponse = {
+  series: unknown[];
+  baseline: { costNtd: number };
+  roiYears: number | null;
+  capexNtd: number;
+};
 
 const app = new Hono().route('/api/simulate', simulateRouter);
 
@@ -52,7 +59,7 @@ describe('POST /api/simulate', () => {
   it('accepts Acme default and returns full SimulateOutput', async () => {
     const res = await postJson(validBody);
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = (await res.json()) as SimulateResponse;
     expect(body).toMatchObject({
       annualCostSavingNtd: expect.any(Number),
       annualCo2SavingTons: expect.any(Number),
@@ -67,7 +74,7 @@ describe('POST /api/simulate', () => {
   it('all-zero scenario returns null ROI', async () => {
     const res = await postJson({ ...validBody, pvKw: 0, essKwh: 0, evPorts: 0 });
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = (await res.json()) as SimulateResponse;
     expect(body.roiYears).toBeNull();
     expect(body.capexNtd).toBe(0);
   });

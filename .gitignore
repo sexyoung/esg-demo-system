@@ -37,6 +37,9 @@ out/
 .env.local
 .env.*.local
 
+# Vercel CLI local config (created by `vercel link`)
+.vercel/
+
 # npm cache directory
 .npm
 *.tgz
@@ -55,3 +58,4 @@ demo-checkpoints/
 test-results/
 playwright-report/
 playwright/.cache/
+.vercel

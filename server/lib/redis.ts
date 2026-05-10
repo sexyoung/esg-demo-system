@@ -14,9 +14,13 @@ export async function getRedis() {
 
   connectionAttempted = true;
 
+  if (!process.env.REDIS_URL) {
+    return null;
+  }
+
   try {
     client = createClient({
-      url: process.env.REDIS_URL ?? 'redis://localhost:6379',
+      url: process.env.REDIS_URL,
       socket: {
         connectTimeout: 800,
         reconnectStrategy: false,

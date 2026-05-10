@@ -114,8 +114,8 @@ function buildOptions(data: EsgSummary | undefined): Highcharts.Options {
     legend: { enabled: false },
     tooltip: {
       ...HIGHCHARTS_TOOLTIP,
-      formatter() {
-        const i = (this.point.index ?? 0) as number;
+      formatter(this: Highcharts.Point) {
+        const i = this.index ?? 0;
         return `<b>${categories[i]}</b><br/>減量 <b>−${this.y}%</b><br/>本月 ${co2Tons[i].toLocaleString()} tCO₂e`;
       },
     },
