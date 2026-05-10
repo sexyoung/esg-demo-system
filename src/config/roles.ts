@@ -74,7 +74,8 @@ export const ROLES: Record<RoleId, RolePreset> = {
   },
 };
 
-// Org hierarchy order: executive → operational → admin.
-// (Demo default is still 'plant-manager' via store/role.ts so the Acme arc
-// starts on the operational dashboard.)
-export const ROLE_ORDER: RoleId[] = ['esg-manager', 'plant-manager', 'site-operator', 'admin'];
+// Field-out order: site-operator → plant-manager → esg-manager → admin.
+// Mirrors the demo arc: floor reality first, then the levels above looking
+// at the same data. (Demo default is still 'plant-manager' via store/role.ts
+// so the Acme arc starts on the operational dashboard.)
+export const ROLE_ORDER: RoleId[] = ['site-operator', 'plant-manager', 'esg-manager', 'admin'];

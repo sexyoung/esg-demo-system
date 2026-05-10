@@ -7,8 +7,9 @@ interface RoleState {
 }
 
 // Role state is sticky on tenant switch (does not reset to tenant.defaultRoleId).
-// Initial value is 'plant-manager' to match the existing dashboard demo flow.
+// Initial value is 'site-operator' so the demo arc opens on the floor view —
+// the persona closest to "what is happening RIGHT NOW".
 export const useRole = create<RoleState>((set) => ({
-  currentRoleId: 'plant-manager',
+  currentRoleId: 'site-operator',
   setRole: (roleId) => set({ currentRoleId: roleId }),
 }));

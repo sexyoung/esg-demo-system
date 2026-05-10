@@ -24,9 +24,10 @@ test.describe('Demo arc — 4 paths', () => {
   test('Path 1: Plant Manager Acme dashboard renders', async ({ page }) => {
     await page.goto(ACME_DASHBOARD);
 
-    // Shell rendered with default role + tenant.
-    await expect(page.getByRole('button', { name: /Role\s+Plant Manager/i })).toBeVisible();
+    // Default role is Site Operator (floor view); switch to Plant Manager.
     await expect(page.getByRole('button', { name: /Tenant\s+Acme/ })).toBeVisible();
+    await switchRole(page, 'Site Operator', /Facility \/ Plant Manager/);
+    await expect(page.getByRole('button', { name: /Role\s+Plant Manager/i })).toBeVisible();
 
     // Plant Manager hero is Live Power Tick (CSS uppercase, DOM is title-case).
     await expect(page.getByText(/Live Power Tick/i).first()).toBeVisible();
@@ -45,7 +46,7 @@ test.describe('Demo arc — 4 paths', () => {
   test('Path 2: ESG Manager → Map → side panel ready', async ({ page }) => {
     await page.goto(ACME_DASHBOARD);
 
-    await switchRole(page, 'Plant Manager', /ESG Manager.*永續長/);
+    await switchRole(page, 'Site Operator', /ESG Manager.*永續長/);
 
     // ESG Manager hero is Target vs Actual.
     await expect(page.getByText(/Target vs Actual/i)).toBeVisible();
@@ -68,7 +69,8 @@ test.describe('Demo arc — 4 paths', () => {
   test('Path 3: Site Operator real-time grid + drawer opens', async ({ page }) => {
     await page.goto(ACME_DASHBOARD);
 
-    await switchRole(page, 'Plant Manager', /Site Operator.*Engineer/);
+    // Default role is already Site Operator — no switch needed.
+    await expect(page.getByRole('button', { name: /Role\s+Site Operator/i })).toBeVisible();
 
     // Compact Site Operator layout (CSS uppercase; DOM is title-case).
     // .first() because the layout config registers live-tick + recent-events
@@ -97,7 +99,7 @@ test.describe('Demo arc — 4 paths', () => {
   test('Path 4: Admin Config Inspector renders with live preview', async ({ page }) => {
     await page.goto(ACME_DASHBOARD);
 
-    await switchRole(page, 'Plant Manager', /Admin.*顧問/);
+    await switchRole(page, 'Site Operator', /Admin.*顧問/);
 
     // Inspector heading + at least one widget id from the registry.
     // (Multiple matches exist: section header, table cell, doc breadcrumb —
