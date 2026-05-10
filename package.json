@@ -17,6 +17,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
     "demo": "concurrently -n api,web -c blue,green \"npm:dev:api\" \"npm:dev\""
   },
   "dependencies": {
@@ -41,6 +43,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",
+    "@playwright/test": "^1.59.1",
     "@types/d3": "^7.4.3",
     "@types/node": "^22.10.5",
     "@types/react": "^19.0.2",

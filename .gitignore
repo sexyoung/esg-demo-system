@@ -50,3 +50,8 @@ out/
 
 # Demo screenshot artifacts (browse skill output)
 demo-checkpoints/
+
+# Playwright
+test-results/
+playwright-report/
+playwright/.cache/
