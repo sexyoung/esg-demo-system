@@ -44,12 +44,13 @@ export function RoleSwitcher() {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className={`inline-flex items-center gap-2 rounded-md border bg-bg-soft px-3 py-1.5 text-sm font-medium text-fg transition ${ACCENT_BORDER[current.accent]}`}
+        className={`inline-flex items-center gap-2 rounded-md border bg-bg-soft px-3 py-1.5 text-sm font-medium text-fg transition whitespace-nowrap ${ACCENT_BORDER[current.accent]}`}
+        title={current.name}
       >
-        <span className={`inline-block h-2 w-2 rounded-full ${ACCENT_DOT[current.accent]}`} />
-        <span className="text-fg-muted text-xs uppercase tracking-wide">Role</span>
+        <span className={`inline-block h-2 w-2 shrink-0 rounded-full ${ACCENT_DOT[current.accent]}`} />
+        <span className="text-fg-muted text-xs uppercase tracking-wide hidden sm:inline">Role</span>
         <span className="tabular-nums">{current.shortName}</span>
-        <ChevronDown size={14} className="text-fg-muted" />
+        <ChevronDown size={14} className="text-fg-muted shrink-0" />
       </button>
       {open && (
         <div className="absolute right-0 top-full mt-1 z-30 min-w-[280px] rounded-md border border-border bg-bg-elevated shadow-lg">

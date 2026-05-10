@@ -34,7 +34,7 @@ export function DashboardPage() {
   const layout: LayoutRow[] = [...baseLayout, ...appendLayout];
 
   return (
-    <div className="p-5 space-y-5 max-w-[1600px] mx-auto">
+    <div className="p-3 xl:p-5 space-y-3 xl:space-y-5 max-w-[1600px] mx-auto">
       <header className="flex items-end justify-between flex-wrap gap-3">
         <div>
           <div className="text-xs uppercase tracking-wider text-fg-subtle mb-1">

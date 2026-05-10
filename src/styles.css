@@ -94,6 +94,11 @@ body {
   animation: connector-flow 1.6s ease-in-out infinite;
 }
 
+@keyframes drawer-up {
+  0% { transform: translateY(24px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
 .energiq-popup-shell .maplibregl-popup-content {
   background: var(--color-bg-elevated);
   color: var(--color-fg);

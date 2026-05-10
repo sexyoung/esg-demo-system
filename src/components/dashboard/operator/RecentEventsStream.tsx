@@ -74,7 +74,7 @@ const SEVERITY_TEXT: Record<Severity, string> = {
   critical: 'text-danger',
 };
 
-const HOLD_COUNT = 8;
+const HOLD_COUNT = 5;
 const TICK_MIN_MS = 2200;
 const TICK_MAX_MS = 4500;
 
@@ -128,17 +128,18 @@ export function RecentEventsStream({ slug }: Props) {
           return (
             <li
               key={e.id}
-              className="flex items-start gap-3 px-4 py-2 text-xs animate-in"
+              className="flex items-center gap-2 px-3 py-1.5 text-[11px] animate-in min-w-0"
               style={{ opacity: Math.max(0.4, opacity) }}
+              title={`${e.assetCode} · ${e.text}`}
             >
-              <span className={`inline-block h-2 w-2 rounded-full mt-1.5 shrink-0 ${SEVERITY_COLOR[e.severity]}`} />
-              <span className="font-mono text-[10px] text-fg-subtle tabular-nums shrink-0 mt-0.5 w-[64px]">
+              <span className={`inline-block h-2 w-2 rounded-full shrink-0 ${SEVERITY_COLOR[e.severity]}`} />
+              <span className="font-mono text-[10px] text-fg-subtle tabular-nums shrink-0 w-[56px]">
                 {formatTime(e.ts)}
               </span>
-              <span className="font-mono text-[10px] text-accent-soft shrink-0 mt-0.5 w-[60px]">
+              <span className="font-mono text-[10px] text-accent-soft shrink-0 w-[52px]">
                 {e.assetCode}
               </span>
-              <span className={`flex-1 leading-5 ${SEVERITY_TEXT[e.severity]}`}>{e.text}</span>
+              <span className={`flex-1 truncate leading-tight ${SEVERITY_TEXT[e.severity]}`}>{e.text}</span>
             </li>
           );
         })}
@@ -152,7 +153,7 @@ function seedInitial(pool: EventTemplate[]): EventEntry[] {
   // starts populated and not empty.
   const out: EventEntry[] = [];
   const now = Date.now();
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; i < HOLD_COUNT; i++) {
     const tpl = pool[Math.floor(Math.random() * pool.length)];
     out.push({
       ...tpl,

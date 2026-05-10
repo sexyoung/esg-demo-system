@@ -22,6 +22,7 @@ export type WidgetId =
   | 'recent-events'
   | 'sop-card'
   | 'work-order-entry'
+  | 'operator-actions'
   // Admin pool
   | 'config-inspector'
   // Tenant-specific (carried over from prior design)

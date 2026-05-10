@@ -292,6 +292,7 @@ export function LivePowerTick({ slug }: Props) {
           stroke: '#5e6e8a',
           grid: { stroke: 'rgba(36, 48, 73, 0.5)' },
           ticks: { show: false },
+          size: 72,
           values: (_u, ticks) => ticks.map((t) => `${(t / 1).toLocaleString('en-US', { maximumFractionDigits: 0 })} kW`),
         },
       ],

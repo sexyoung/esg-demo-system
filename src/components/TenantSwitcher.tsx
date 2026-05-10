@@ -36,11 +36,14 @@ export function TenantSwitcher() {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="inline-flex items-center gap-2 rounded-md border border-border bg-bg-soft px-3 py-1.5 text-sm font-medium text-fg hover:border-accent transition"
+        className="inline-flex items-center gap-2 rounded-md border border-border bg-bg-soft px-3 py-1.5 text-sm font-medium text-fg hover:border-accent transition whitespace-nowrap"
+        title={current?.name}
       >
-        <span className="text-fg-muted text-xs uppercase tracking-wide">Tenant</span>
-        <span className="tabular-nums">{isLoading ? '載入中…' : current?.name ?? '未選擇'}</span>
-        <ChevronDown size={14} className="text-fg-muted" />
+        <span className="text-fg-muted text-xs uppercase tracking-wide hidden sm:inline">Tenant</span>
+        <span className="tabular-nums max-w-[140px] lg:max-w-none truncate">
+          {isLoading ? '載入中…' : current?.name ?? '未選擇'}
+        </span>
+        <ChevronDown size={14} className="text-fg-muted shrink-0" />
       </button>
       {open && data && (
         <div className="absolute right-0 top-full mt-1 z-30 min-w-[260px] rounded-md border border-border bg-bg-elevated shadow-lg">

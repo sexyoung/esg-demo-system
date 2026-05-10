@@ -363,21 +363,24 @@ function StationCard({ station, state }: { station: Station; state: StationState
   const dotClass =
     status === 'fault' ? 'bg-danger live-dot' : status === 'warn' ? 'bg-warn live-dot' : 'bg-success';
 
+  // Compact mode: show only the first (primary) metric per station.
+  // Full metric breakdown lives in the station detail drawer (future).
+  const primary = station.metrics[0];
+  const primaryValue = values[0];
+
   return (
-    <article className={`flex-1 min-w-[150px] rounded-md border ${borderClass} p-2.5 flex flex-col gap-1.5`}>
-      <header className="flex items-start justify-between gap-2">
+    <article
+      className={`flex-1 min-w-[110px] rounded-md border ${borderClass} p-2 flex flex-col gap-1`}
+      title={`${station.name} · ${station.role}`}
+    >
+      <header className="flex items-start justify-between gap-1.5">
         <div className="min-w-0">
           <div className="text-[10px] font-mono text-fg-subtle truncate">{station.id}</div>
-          <div className="text-xs font-medium text-fg truncate">{station.name}</div>
-          <div className="text-[10px] text-fg-muted truncate">{station.role}</div>
+          <div className="text-xs font-medium text-fg truncate leading-tight">{station.name}</div>
         </div>
         <span className={`inline-block h-2 w-2 rounded-full mt-1 shrink-0 ${dotClass}`} />
       </header>
-      <ul className="space-y-1.5 mt-0.5">
-        {station.metrics.map((m, i) => (
-          <MetricRow key={m.label} metric={m} value={values[i]} />
-        ))}
-      </ul>
+      {primary && <MetricRow metric={primary} value={primaryValue} />}
     </article>
   );
 }

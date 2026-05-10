@@ -158,56 +158,41 @@ export function AssetPulseGrid({ slug }: Props) {
           {states.length} assets · tick {TICK_MS} ms · last {HISTORY_LEN} samples
         </div>
       </header>
-      <div className="p-3 grid gap-2 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+      <div className="p-2 grid gap-1.5 grid-cols-3 sm:grid-cols-4 md:grid-cols-6">
         {states.map((s) => (
-          <AssetCard key={s.spec.code} state={s} tickKey={tick} />
+          <AssetChip key={s.spec.code} state={s} tickKey={tick} />
         ))}
       </div>
     </section>
   );
 }
 
-function AssetCard({ state, tickKey }: { state: AssetState; tickKey: number }) {
+function AssetChip({ state, tickKey }: { state: AssetState; tickKey: number }) {
   const { spec, history, status } = state;
   const value = history[history.length - 1] ?? spec.base;
-  const prev = history[history.length - 2] ?? value;
-  const delta = value - prev;
   const pill = STATUS_PILL[status];
   const accent = TYPE_ACCENT[spec.type];
   const decimals = spec.decimals ?? 1;
 
   return (
     <article
-      className="rounded-md border border-border-soft bg-bg/40 p-2.5 flex flex-col gap-1.5"
+      className={`rounded-md border bg-bg/40 px-2 py-1.5 flex items-center gap-2 min-w-0 ${
+        status === 'fault' ? 'border-danger/40' : status === 'idle' ? 'border-border-soft' : 'border-border-soft'
+      }`}
       data-testid={`asset-${spec.code}`}
-      // Subtle key so animations re-fire on tick (used by spark fade-in)
       data-tick={tickKey}
+      title={`${spec.name} · ${pill.label}`}
     >
-      <header className="flex items-center justify-between gap-2 min-w-0">
-        <div className="min-w-0">
-          <div className="text-[10px] font-mono text-fg-subtle truncate">{spec.code}</div>
-          <div className={`text-xs font-medium truncate ${accent}`}>{spec.name}</div>
-        </div>
-        <span className={`inline-flex items-center gap-1 text-[9px] uppercase tracking-wider ${pill.text}`}>
-          <span className={`inline-block h-1.5 w-1.5 rounded-full ${pill.dot} ${status === 'fault' ? 'live-dot' : ''}`} />
-          {pill.label}
-        </span>
-      </header>
-      <div className="flex items-baseline justify-between gap-2">
-        <span className="text-base font-semibold tabular-nums">
+      <span
+        className={`inline-block h-2 w-2 shrink-0 rounded-full ${pill.dot} ${status === 'fault' ? 'live-dot' : ''}`}
+      />
+      <div className="min-w-0 flex-1">
+        <div className={`text-[10px] font-mono truncate leading-tight ${accent}`}>{spec.code}</div>
+        <div className="text-xs font-semibold tabular-nums leading-tight truncate">
           {formatNum(value, decimals)}
-          <span className="text-[10px] text-fg-muted ml-1 font-normal">{spec.unit}</span>
-        </span>
-        <span
-          className={`text-[10px] tabular-nums ${
-            Math.abs(delta) < 0.001 ? 'text-fg-subtle' : delta >= 0 ? 'text-success' : 'text-danger'
-          }`}
-        >
-          {delta >= 0 ? '+' : ''}
-          {formatNum(delta, decimals)}
-        </span>
+          <span className="text-[9px] text-fg-muted ml-0.5 font-normal">{spec.unit}</span>
+        </div>
       </div>
-      <Sparkline values={history} status={status} spec={spec} />
     </article>
   );
 }

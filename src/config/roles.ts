@@ -38,15 +38,15 @@ export const ROLES: Record<RoleId, RolePreset> = {
     id: 'site-operator',
     name: 'Site Operator / Engineer',
     shortName: 'Site Operator',
-    // Reordered to lead with real-time: live tick at top, event stream + alerts
-    // (the "what is happening RIGHT NOW" pair) above asset hierarchy + SOP/WO.
+    // Compact iPad-friendly layout: live-tick + events stream split as hero,
+    // production-line + equipment-pulse condensed strips, alerts/SOP/WO
+    // tucked into a bottom action bar with slide-up drawers.
     hero: 'live-tick',
     layout: [
-      { kind: 'full', widget: 'live-tick' },
-      { kind: 'split', left: 'recent-events', right: 'active-alerts', ratio: '1.6:1' },
+      { kind: 'split', left: 'live-tick', right: 'recent-events', ratio: '1.6:1' },
       { kind: 'full', widget: 'production-line' },
       { kind: 'full', widget: 'equipment-pulse' },
-      { kind: 'split', left: 'sop-card', right: 'work-order-entry', ratio: '1:1' },
+      { kind: 'full', widget: 'operator-actions' },
     ],
     modules: ['dashboard', 'asset', 'alert'],
     defaultFilters: { dateRange: 'today', granularity: 'minute' },

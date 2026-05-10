@@ -16,7 +16,7 @@ const SPLIT_RATIO_CLASS: Record<NonNullable<Extract<LayoutRow, { kind: 'split' }
 
 export function LayoutRenderer({ layout, tenantSlug, roleId, filters }: LayoutRendererProps) {
   return (
-    <div className="space-y-5" key={roleId}>
+    <div className="space-y-3 xl:space-y-5" key={roleId}>
       {layout.map((row, idx) => (
         <div
           key={`${roleId}-${idx}`}
@@ -51,7 +51,7 @@ function LayoutRowView({
   }
   const ratioClass = SPLIT_RATIO_CLASS[row.ratio ?? '1:1'];
   return (
-    <div className={`grid gap-5 ${ratioClass}`}>
+    <div className={`grid gap-3 xl:gap-5 ${ratioClass}`}>
       <RenderWidget id={row.left} tenantSlug={tenantSlug} roleId={roleId} filters={filters} />
       <RenderWidget id={row.right} tenantSlug={tenantSlug} roleId={roleId} filters={filters} />
     </div>

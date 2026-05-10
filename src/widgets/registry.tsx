@@ -15,6 +15,7 @@ import { RenewableRatio } from '../components/dashboard/esg/RenewableRatio';
 import { ReportExport } from '../components/dashboard/esg/ReportExport';
 import { TargetVsActual } from '../components/dashboard/esg/TargetVsActual';
 import { AssetPulseGrid } from '../components/dashboard/operator/AssetPulseGrid';
+import { OperatorActions } from '../components/dashboard/operator/OperatorActions';
 import { ProductionLineSchematic } from '../components/dashboard/operator/ProductionLineSchematic';
 import { RecentEventsStream } from '../components/dashboard/operator/RecentEventsStream';
 import { SopCard } from '../components/dashboard/operator/SopCard';
@@ -125,6 +126,11 @@ export const WIDGET_REGISTRY: Record<WidgetId, WidgetDefinition> = {
     id: 'work-order-entry',
     title: 'Work Order',
     Component: wrap(WorkOrderEntry),
+  },
+  'operator-actions': {
+    id: 'operator-actions',
+    title: 'Operator Actions',
+    Component: wrap(OperatorActions),
   },
 
   // Admin pool — Day 5 (live)
