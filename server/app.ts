@@ -16,6 +16,8 @@ export function createApp() {
 
   app.use('/api/*', cors());
 
+  app.get('/api/ping', (c) => c.json({ pong: true, ts: Date.now() }));
+
   app.get('/api/health', async (c) => {
     const [database, redis] = await Promise.all([checkDatabase(), checkRedis()]);
     return c.json({
