@@ -1,9 +1,6 @@
-console.log('[boot] server/app.ts loading');
 import { Hono } from 'hono';
-console.log('[boot] hono imported');
 import { cors } from 'hono/cors';
 import { prisma } from './lib/prisma.js';
-console.log('[boot] prisma imported');
 import { getRedis } from './lib/redis.js';
 import { tenantsRouter } from './routes/tenants.js';
 import { metricsRouter } from './routes/metrics.js';
@@ -13,7 +10,6 @@ import { flowsRouter } from './routes/flows.js';
 import { sitesRouter } from './routes/sites.js';
 import { liveRouter } from './routes/live.js';
 import { simulateRouter } from './routes/simulate.js';
-console.log('[boot] all routes imported');
 
 export function createApp() {
   const app = new Hono();
